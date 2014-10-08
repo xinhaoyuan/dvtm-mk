@@ -302,6 +302,22 @@ reorder(int tag) {
 }
 
 static void
+updatebarpos(void) {
+	bar.y = 0;
+	wax = 0;
+	way = 0;
+	wah = screen.h;
+	waw = screen.w;
+	if (bar.pos == BAR_TOP) {
+		wah -= bar.h;
+		way += bar.h;
+	} else if (bar.pos == BAR_BOTTOM) {
+		wah -= bar.h;
+		bar.y = wah;
+	}
+}
+
+static void
 drawbar(void) {
 	int sx, sy, x = 0;
 	if (bar.pos == BAR_OFF)
@@ -429,6 +445,15 @@ arrange(void) {
 			m++;
 	erase();
 	attrset(NORMAL_ATTR);
+	if (bar.fd == -1) {
+		int n = 0;
+		for (Client *c = nextvisible(clients); c; c = nextvisible(c->next), n++);
+		if ((!clients || !clients->next) && n == 1)
+			bar.pos = BAR_OFF;
+		else
+			bar.pos = BAR_POS;
+		updatebarpos();
+	}
 	if (m && !isarrange(fullscreen))
 		wah--;
 	layout->arrange();
@@ -670,22 +695,6 @@ sigwinch_handler(int sig) {
 static void
 sigterm_handler(int sig) {
 	running = false;
-}
-
-static void
-updatebarpos(void) {
-	bar.y = 0;
-	wax = 0;
-	way = 0;
-	wah = screen.h;
-	waw = screen.w;
-	if (bar.pos == BAR_TOP) {
-		wah -= bar.h;
-		way += bar.h;
-	} else if (bar.pos == BAR_BOTTOM) {
-		wah -= bar.h;
-		bar.y = wah;
-	}
 }
 
 static void
