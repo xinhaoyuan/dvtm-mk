@@ -4,13 +4,13 @@ static void vstack(void)
 	unsigned int i, n, ny, nh, mh, th;
 	Client *c;
 
-	for (n = 0, c = clients; c && !c->minimized; c = c->next, n++);
+	for (n = 0, c = nextvisible(clients); c && !c->minimized; c = nextvisible(c->next), n++);
 
 	mh = n <= 1 ? wah : screen.mfact * wah;
 	th = n <= 1 ? 0 : (wah - mh) / (n - 1);
 	ny = way;
 
-	for (i = 0, c = clients; c && !c->minimized; c = c->next, i++) {
+	for (i = 0, c = nextvisible(clients); c && !c->minimized; c = nextvisible(c->next), i++){
 		if (i == 0) /* master */
 			nh = mh;
 		else /* tile window */

@@ -47,6 +47,16 @@ static Color colors[] = {
 #define MFACT 0.5
 /* scroll back buffer size in lines */
 #define SCROLL_HISTORY 500
+/* printf format string for the tag in the status bar */
+#define TAG_SYMBOL   "[%s]"
+/* curses attributes for the currently selected tags */
+#define TAG_SEL      (COLOR(BLUE) | A_BOLD)
+/* curses attributes for not selected tags which contain no windows */
+#define TAG_NORMAL   (COLOR(DEFAULT) | A_NORMAL)
+/* curses attributes for not selected tags which contain windows */
+#define TAG_OCCUPIED (COLOR(BLUE) | A_NORMAL)
+
+const char tags[][8] = { "1", "2", "3", "4", "5" };
 
 #include "tile.c"
 #include "grid.c"
@@ -61,7 +71,7 @@ static Layout layouts[] = {
 	{ "[ ]", fullscreen },
 };
 
-#define MOD CTRL('g')
+#define MOD  CTRL('g')
 
 /* you can at most specifiy MAX_ARGS (3) number of arguments */
 static KeyBinding bindings[] = {
@@ -72,7 +82,7 @@ static KeyBinding bindings[] = {
 	{ { MOD, 'u',          }, { focusnextnm,    { NULL }                    } },
 	{ { MOD, 'i',          }, { focusprevnm,    { NULL }                    } },
 	{ { MOD, 'k',          }, { focusprev,      { NULL }                    } },
-	{ { MOD, 't',          }, { setlayout,      { "[]=" }                   } },
+	{ { MOD, 'T',          }, { setlayout,      { "[]=" }                   } },
 	{ { MOD, 'g',          }, { setlayout,      { "+++" }                   } },
 	{ { MOD, 'b',          }, { setlayout,      { "TTT" }                   } },
 	{ { MOD, 'm',          }, { setlayout,      { "[ ]" }                   } },
@@ -92,21 +102,45 @@ static KeyBinding bindings[] = {
 	{ { MOD, '7',          }, { focusn,         { "7" }                     } },
 	{ { MOD, '8',          }, { focusn,         { "8" }                     } },
 	{ { MOD, '9',          }, { focusn,         { "9" }                     } },
-	{ { MOD, '\t',         }, { focuslast,      { NULL }                    } },
 	{ { MOD, 'q',          }, { quit,           { NULL }                    } },
 	{ { MOD, 'a',          }, { togglerunall,   { NULL }                    } },
-	{ { MOD, 'r',          }, { redraw,         { NULL }                    } },
+	{ { MOD, CTRL('L'),    }, { redraw,         { NULL }                    } },
 	{ { MOD, 'B',          }, { togglebell,     { NULL }                    } },
-	{ { MOD, 'v',          }, { copymode,       { NULL }                    } },
+	{ { MOD, 'e',          }, { copymode,       { NULL }                    } },
 	{ { MOD, '/',          }, { copymode,       { "/" }                     } },
 	{ { MOD, '?',          }, { copymode,       { "?" }                     } },
 	{ { MOD, 'p',          }, { paste,          { NULL }                    } },
 	{ { MOD, KEY_PPAGE,    }, { scrollback,     { "-1" }                    } },
 	{ { MOD, KEY_NPAGE,    }, { scrollback,     { "1"  }                    } },
-	{ { MOD, KEY_F(1),     }, { create,         { "man dvtm", "dvtm help" } } },
 	{ { MOD, MOD,          }, { send,           { (const char []){MOD, 0} } } },
 	{ { KEY_SPREVIOUS,     }, { scrollback,     { "-1" }                    } },
 	{ { KEY_SNEXT,         }, { scrollback,     { "1"  }                    } },
+	{ { MOD, MOD,          }, { send,           { (const char []){MOD, 0} } } },
+	{ { KEY_SPREVIOUS,     }, { scrollback,     { "-1" }                    } },
+	{ { KEY_SNEXT,         }, { scrollback,     { "1"  }                    } },
+	{ { MOD, '\t',         }, { viewprevtag,    { NULL }                    } },
+	{ { MOD, '0',          }, { view,           { NULL }                    } },
+	{ { MOD, KEY_F(1),     }, { view,           { tags[0] }                 } },
+	{ { MOD, KEY_F(2),     }, { view,           { tags[1] }                 } },
+	{ { MOD, KEY_F(3),     }, { view,           { tags[2] }                 } },
+	{ { MOD, KEY_F(4),     }, { view,           { tags[3] }                 } },
+	{ { MOD, KEY_F(5),     }, { view,           { tags[4] }                 } },
+	{ { MOD, 't', '0',     }, { tag,            { NULL }                    } },
+	{ { MOD, 't', KEY_F(1) }, { tag,            { tags[0] }                 } },
+	{ { MOD, 't', KEY_F(2) }, { tag,            { tags[1] }                 } },
+	{ { MOD, 't', KEY_F(3) }, { tag,            { tags[2] }                 } },
+	{ { MOD, 't', KEY_F(4) }, { tag,            { tags[3] }                 } },
+	{ { MOD, 't', KEY_F(5) }, { tag,            { tags[4] }                 } },
+	{ { MOD, 'v', KEY_F(1) }, { toggleview,     { tags[0] }                 } },
+	{ { MOD, 'v', KEY_F(2) }, { toggleview,     { tags[1] }                 } },
+	{ { MOD, 'v', KEY_F(3) }, { toggleview,     { tags[2] }                 } },
+	{ { MOD, 'v', KEY_F(4) }, { toggleview,     { tags[3] }                 } },
+	{ { MOD, 'v', KEY_F(5) }, { toggleview,     { tags[4] }                 } },
+	{ { MOD, 'r', KEY_F(1) }, { toggletag,      { tags[0] }                 } },
+	{ { MOD, 'r', KEY_F(2) }, { toggletag,      { tags[1] }                 } },
+	{ { MOD, 'r', KEY_F(3) }, { toggletag,      { tags[2] }                 } },
+	{ { MOD, 'r', KEY_F(4) }, { toggletag,      { tags[3] }                 } },
+	{ { MOD, 'r', KEY_F(5) }, { toggletag,      { tags[4] }                 } },
 };
 
 static const ColorRule colorrules[] = {

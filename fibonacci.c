@@ -3,7 +3,7 @@ static void fibonacci(int s)
 	unsigned int nx, ny, nw, nnw, nh, nnh, i, n, mod;
 	Client *c;
 
-	for (n = 0, c = clients; c && !c->minimized; c = c->next, n++);
+	for (n = 0, c = nextvisible(clients); c && !c->minimized; c = nextvisible(c->next), n++);
 
 	/* initial position and dimensions */
 	nx = wax;
@@ -19,7 +19,7 @@ static void fibonacci(int s)
 	/* set the mod factor, 2 for dwindle, 4 for spiral */
 	mod = s ? 4 : 2;
 
-	for (i = 0, c = clients; c && !c->minimized; c = c->next, i++) {
+	for (i = 0, c = nextvisible(clients); c && !c->minimized; c = nextvisible(c->next), i++){
 		/* dwindle: even case, spiral: case 0 */
 		if (i % mod == 0) {
 			if (i) {
