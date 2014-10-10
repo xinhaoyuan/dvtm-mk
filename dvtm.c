@@ -991,8 +991,7 @@ create(const char *args[]) {
 		return;
 	}
 
-	c->has_title_line = show_border();
-	c->term = c->app = vt_create(screen.h - c->has_title_line, screen.w, screen.history);
+	c->term = c->app = vt_create(screen.h, screen.w, screen.history);
 	if (!c->term) {
 		delwin(c->window);
 		free(c);
