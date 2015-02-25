@@ -1826,8 +1826,8 @@ main(int argc, char *argv[]) {
 
 		if (FD_ISSET(STDIN_FILENO, &rd)) {
                         TermKeyKey key;
-                        TermKeyResult r = termkey_waitkey(tk, &key);
-                        if (r == TERMKEY_RES_KEY) {
+                        TermKeyResult tkr = termkey_waitkey(tk, &key);;
+                        while (tkr == TERMKEY_RES_KEY) {
                             switch (key.type) {
                             case TERMKEY_TYPE_MOUSE:
                                 handle_mouse();
@@ -1869,6 +1869,8 @@ main(int argc, char *argv[]) {
                             default:
                                 break;
                             }
+
+                            tkr = termkey_getkey(tk, &key);
                         }
 			if (r == 1) /* no data available on pty's */
 				continue;
