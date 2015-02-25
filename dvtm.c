@@ -34,6 +34,7 @@
 #if defined __CYGWIN__ || defined __sun
 # include <termios.h>
 #endif
+#include <termkey.h>
 #include "vt.h"
 
 #ifdef PDCURSES
@@ -114,12 +115,8 @@ typedef struct {
 	const char *args[MAX_ARGS];
 } Action;
 
-#define MAX_KEYS 3
-
-typedef unsigned int KeyCombo[MAX_KEYS];
-
 typedef struct {
-	KeyCombo keys;
+        const char *keyseq_rep;
 	Action action;
 } KeyBinding;
 
@@ -219,6 +216,9 @@ extern Screen screen;
 static unsigned int waw, wah, wax, way;
 static Client *clients = NULL;
 static char *title;
+static TermKey *tk;
+#include "trie/trie_array.c"
+static struct trie_s binding_trie;
 
 #include "config.h"
 
@@ -746,22 +746,6 @@ resize_screen(void) {
 	arrange();
 }
 
-static KeyBinding*
-keybinding(KeyCombo keys) {
-	unsigned int keycount = 0;
-	while (keycount < MAX_KEYS && keys[keycount])
-		keycount++;
-	for (unsigned int b = 0; b < LENGTH(bindings); b++) {
-		for (unsigned int k = 0; k < keycount; k++) {
-			if (keys[k] != bindings[b].keys[k])
-				break;
-			if (k == keycount - 1)
-				return &bindings[b];
-		}
-	}
-	return NULL;
-}
-
 static unsigned int
 bitoftag(const char *tag) {
 	unsigned int i;
@@ -829,26 +813,97 @@ viewprevtag(const char *args[]) {
 	tagschanged();
 }
 
+static char *termkey_sym_to_seq[] = {
+    [TERMKEY_SYM_BACKSPACE] = "\x08",
+    [TERMKEY_SYM_TAB]       = "\x09",
+    [TERMKEY_SYM_ENTER]     = "\x0d",
+    [TERMKEY_SYM_ESCAPE]    = "\x1b",
+    [TERMKEY_SYM_SPACE]     = "\x20",
+    [TERMKEY_SYM_DEL]       = "\x7f",
+    [TERMKEY_SYM_UP]        = "\e[A",
+    [TERMKEY_SYM_DOWN]      = "\e[B",
+    [TERMKEY_SYM_LEFT]      = "\e[D",
+    [TERMKEY_SYM_RIGHT]     = "\e[C",
+    [TERMKEY_SYM_INSERT]    = "\e[2~",
+    [TERMKEY_SYM_DELETE]    = "\e[3~",
+    [TERMKEY_SYM_PAGEUP]    = "\e[5~",
+    [TERMKEY_SYM_PAGEDOWN]  = "\e[6~",
+    [TERMKEY_SYM_HOME]      = "\e[H",
+    [TERMKEY_SYM_END]       = "\e[F",
+};
+
+static int unicode_ctrl_raw[256] = {
+    ['h'] = 1,
+    ['i'] = 1,
+    ['m'] = 1,
+    ['['] = 1
+};
+
 static void
-keypress(int code) {
-	unsigned int len = 1;
-	char buf[8] = { '\e' };
-
-	if (code == '\e') {
-		/* pass characters following escape to the underlying app */
-		nodelay(stdscr, TRUE);
-		for (int t; len < sizeof(buf) && (t = getch()) != ERR; len++)
-			buf[len] = t;
-		nodelay(stdscr, FALSE);
-	}
-
+keypress(TermKeyKey *key) {
+        char _keyseq[16];
+        char *keyseq;
+        int   len;
+        int   code = '\e';
+        if (key->type == TERMKEY_TYPE_UNICODE) {
+            if (key->modifiers == 0) {
+                keyseq = key->utf8;
+                len = strlen(keyseq);
+            } else if (key->modifiers == TERMKEY_KEYMOD_CTRL &&
+                       key->code.codepoint >= 'a' && key->code.codepoint <= 'z' &&
+                       unicode_ctrl_raw[key->code.codepoint] == 0) {
+                code = key->code.codepoint - 'a' + 1;
+            } else if (key->modifiers == TERMKEY_KEYMOD_ALT) {
+                len = snprintf(_keyseq, 16, "\e%s", key->utf8);
+                keyseq = _keyseq;
+            } else {
+                len = snprintf(_keyseq, 16, "\e[%ld;%du", key->code.codepoint, 1 + key->modifiers);
+                keyseq = _keyseq;
+            }
+        } else if (key->type == TERMKEY_TYPE_KEYSYM) {
+            if (termkey_sym_to_seq[key->code.sym]) {
+                keyseq = termkey_sym_to_seq[key->code.sym];
+                if (key->modifiers) {
+                    if (key->modifiers == TERMKEY_KEYMOD_ALT &&
+                        keyseq[0] != '\e') {
+                        len = snprintf(_keyseq, 16, "\e%s", keyseq);
+                        keyseq = _keyseq;
+                    } else if (keyseq[0] != '\e') {
+                        len = snprintf(_keyseq, 16, "\e[%d;%du", keyseq[0], 1 + key->modifiers);
+                        keyseq = _keyseq;
+                    } else {
+                        len = strlen(keyseq);
+                        if (keyseq[len - 1] == '~') {
+                            int nlen = snprintf(_keyseq, 16, "%s%d~",
+                                                keyseq,
+                                                1 + key->modifiers);
+                            _keyseq[len - 1] = ';';
+                            len = nlen;
+                            keyseq = _keyseq;
+                        } else {
+                            len = snprintf(_keyseq, 16, "\e[1;%d%s",
+                                           1 + key->modifiers,
+                                           keyseq + 2); /* Ignore CSI */
+                            keyseq = _keyseq;
+                        }
+                    }
+                }
+            } else {
+                keyseq = _keyseq;
+                keyseq[0] = 0;
+            }
+        } else {
+            keyseq = _keyseq;
+            keyseq[0] = 0;
+        }
+        
 	for (Client *c = runinall ? nextvisible(clients) : sel; c; c = nextvisible(c->next)) {
 		if (is_content_visible(c)) {
 			c->urgent = false;
 			if (code == '\e')
-				vt_write(c->term, buf, len);
+			    vt_write(c->term, keyseq, strlen(keyseq));
 			else
-				vt_keypress(c->term, code);
+			    vt_keypress(c->term, code);
 		}
 		if (!runinall)
 			break;
@@ -896,12 +951,13 @@ static void
 setup(void) {
 	shell = getshell();
 	setlocale(LC_CTYPE, "");
+        tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_CTRLC);
 	initscr();
 	start_color();
 	noecho();
 	nonl();
-	keypad(stdscr, TRUE);
-	mouse_setup();
+	keypad(stdscr, FALSE);
+	/* mouse_setup(); */
 	raw();
 	vt_init();
 	vt_keytable_set(keytable, LENGTH(keytable));
@@ -914,6 +970,13 @@ setup(void) {
 		}
 		colors[i].pair = vt_color_reserve(colors[i].fg, colors[i].bg);
 	}
+        const char **reps = malloc(sizeof(const char *) * LENGTH(bindings));
+        void **binding_mapping = malloc(sizeof(void *) * LENGTH(bindings));
+        for (unsigned i = 0; i < LENGTH(bindings); ++ i) {
+            reps[i] = bindings[i].keyseq_rep;
+            binding_mapping[i] = &bindings[i];
+        }
+        ta_create(&binding_trie, reps, binding_mapping, LENGTH(bindings));
 	resize_screen();
 	struct sigaction sa;
 	sa.sa_flags = 0;
@@ -965,6 +1028,7 @@ cleanup(void) {
 		destroy(clients);
 	vt_shutdown();
 	endwin();
+        termkey_destroy(tk);
 	free(copyreg.data);
 	if (bar.fd > 0)
 		close(bar.fd);
@@ -1662,15 +1726,6 @@ parse_args(int argc, char *argv[]) {
 			case 'M':
 				mouse_events_enabled = !mouse_events_enabled;
 				break;
-			case 'm': {
-				char *mod = argv[++arg];
-				if (mod[0] == '^' && mod[1])
-					*mod = CTRL(mod[1]);
-				for (unsigned int b = 0; b < LENGTH(bindings); b++)
-					if (bindings[b].keys[0] == MOD)
-						bindings[b].keys[0] = *mod;
-				break;
-			}
 			case 'd':
 				set_escdelay(atoi(argv[++arg]));
 				if (ESCDELAY < 50)
@@ -1705,9 +1760,7 @@ parse_args(int argc, char *argv[]) {
 
 int
 main(int argc, char *argv[]) {
-	KeyCombo keys;
-	unsigned int key_index = 0;
-	memset(keys, 0, sizeof(keys));
+        struct trie_cursor_s cursor;
 	sigset_t emptyset, blockset;
 
 	setenv("DVTM", VERSION, 1);
@@ -1722,6 +1775,7 @@ main(int argc, char *argv[]) {
 	sigaddset(&blockset, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &blockset, NULL);
 
+        ta_traverse_init(&binding_trie, &cursor);
 	while (running) {
 		int r, nfds = 0;
 		fd_set rd;
@@ -1771,27 +1825,51 @@ main(int argc, char *argv[]) {
 		}
 
 		if (FD_ISSET(STDIN_FILENO, &rd)) {
-			int code = getch();
-			if (code >= 0) {
-				keys[key_index++] = code;
-				KeyBinding *binding = NULL;
-				if (code == KEY_MOUSE) {
-					handle_mouse();
-				} else if ((binding = keybinding(keys))) {
-					unsigned int key_length = 0;
-					while (key_length < MAX_KEYS && binding->keys[key_length])
-						key_length++;
-					if (key_index == key_length) {
-						binding->action.cmd(binding->action.args);
-						key_index = 0;
-						memset(keys, 0, sizeof(keys));
-					}
-				} else {
-					key_index = 0;
-					memset(keys, 0, sizeof(keys));
-					keypress(code);
-				}
-			}
+                        TermKeyKey key;
+                        TermKeyResult r = termkey_waitkey(tk, &key);
+                        if (r == TERMKEY_RES_KEY) {
+                            switch (key.type) {
+                            case TERMKEY_TYPE_MOUSE:
+                                handle_mouse();
+                                break;
+                            case TERMKEY_TYPE_UNICODE:
+                            case TERMKEY_TYPE_FUNCTION:
+                            case TERMKEY_TYPE_KEYSYM:
+                            {
+                                char repbuf[16];
+                                int len = termkey_strfkey(tk, repbuf, 16, &key, 0);
+                                debug("KEY: %s %d\n", repbuf, len);
+                                int matched = 0;
+                                for (int i = 0; i < len; ++ i) {
+                                    int ret = ta_traverse(&binding_trie, &cursor, repbuf[i]);
+                                    debug("travese %d\n", ret);
+                                    if (ret < 0) {
+                                        ta_traverse_init(&binding_trie, &cursor);
+                                        matched = -1;
+                                        break;
+                                    } else if (i == len - 1) {
+                                        if (ret == 0) {
+                                            KeyBinding *binding = ta_get_value(&binding_trie, &cursor);
+                                            if (ta_traverse(&binding_trie, &cursor, ' ') < 0) {
+                                                binding->action.cmd(binding->action.args);
+                                                ta_traverse_init(&binding_trie, &cursor);
+                                                matched = 1;
+                                            }
+                                        } else {
+                                            matched = ta_traverse(&binding_trie, &cursor, ' ');
+                                        }
+                                    }
+                                }
+
+                                if (matched < 0) {
+                                    debug("no match\n");
+                                    keypress(&key);
+                                }
+                            } break;
+                            default:
+                                break;
+                            }
+                        }
 			if (r == 1) /* no data available on pty's */
 				continue;
 		}
