@@ -916,11 +916,12 @@ mouse_setup(void) {
 	mmask_t mask = 0;
 
 	if (mouse_events_enabled) {
-		mask = BUTTON1_CLICKED | BUTTON2_CLICKED;
-		for (unsigned int i = 0; i < LENGTH(buttons); i++)
-			mask |= buttons[i].mask;
-	}
-	mousemask(mask, NULL);
+            debug("mouse enabled\n");
+            printf("\033[?1000h");
+	} else {
+            debug("mouse disabled\n");
+            printf("\033[?1000l");
+        }
 #endif /* CONFIG_MOUSE */
 }
 
@@ -952,13 +953,14 @@ setup(void) {
 	shell = getshell();
 	setlocale(LC_CTYPE, "");
         tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_CTRLC);
+        printf("\e[?1000s\e[?1000h");
 	initscr();
 	start_color();
 	noecho();
 	nonl();
 	keypad(stdscr, FALSE);
-	/* mouse_setup(); */
 	raw();
+        /* mouse_setup(); */
 	vt_init();
 	vt_keytable_set(keytable, LENGTH(keytable));
 	for (unsigned int i = 0; i < LENGTH(colors); i++) {
@@ -1028,6 +1030,7 @@ cleanup(void) {
 		destroy(clients);
 	vt_shutdown();
 	endwin();
+        printf("\e[?1000r");
         termkey_destroy(tk);
 	free(copyreg.data);
 	if (bar.fd > 0)
@@ -1587,27 +1590,40 @@ handle_cmdfifo(void) {
 }
 
 static void
-handle_mouse(void) {
+handle_mouse(TermKeyKey *key) {
 #ifdef CONFIG_MOUSE
-	MEVENT event;
-	unsigned int i;
-	if (getmouse(&event) != OK)
+        // MEVENT event;
+        TermKeyMouseEvent event;
+        TermKeyResult r;
+        int i, y, x, b = 0;
+        r = termkey_interpret_mouse(tk, key, &event, &b, &y, &x);
+        if (r != TERMKEY_RES_KEY) return;
+        switch (event) {
+        case TERMKEY_MOUSE_PRESS:
+            -- x; -- y;
+            msel = get_client_by_coord(x, y);
+
+            if (!msel)
 		return;
-	msel = get_client_by_coord(event.x, event.y);
 
-	if (!msel)
-		return;
+            mmask_t mask = 0;
+            if (b == 1) mask = BUTTON1_CLICKED;
+            else if (b == 2) mask = BUTTON2_CLICKED;
+            else if (b == 3) mask = BUTTON3_CLICKED;
 
-	debug("mouse x:%d y:%d cx:%d cy:%d mask:%d\n", event.x, event.y, event.x - msel->x, event.y - msel->y, event.bstate);
+            debug("mouse x:%d y:%d %d cx:%d cy:%d mask:%d\n", x, y, b, x - msel->x, y - msel->y, mask);
 
-	vt_mouse(msel->term, event.x - msel->x, event.y - msel->y, event.bstate);
+            vt_mouse(msel->term, x - msel->x, y - msel->y, mask);
 
-	for (i = 0; i < LENGTH(buttons); i++) {
-		if (event.bstate & buttons[i].mask)
-			buttons[i].action.cmd(buttons[i].action.args);
-	}
+            for (i = 0; i < LENGTH(buttons); i++) {
+		if (mask & buttons[i].mask) {
+                    buttons[i].action.cmd(buttons[i].action.args);
+                }
+            }
 
-	msel = NULL;
+            msel = NULL;
+            break;
+        };
 #endif /* CONFIG_MOUSE */
 }
 
@@ -1692,7 +1708,6 @@ open_or_create_fifo(const char *name, const char **name_created) {
 
 static void
 usage(void) {
-	cleanup();
 	eprint("usage: dvtm [-v] [-M] [-m mod] [-d delay] [-h lines] [-t title] "
 	       "[-s status-fifo] [-c cmd-fifo] [cmd...]\n");
 	exit(EXIT_FAILURE);
@@ -1830,7 +1845,7 @@ main(int argc, char *argv[]) {
                         while (tkr == TERMKEY_RES_KEY) {
                             switch (key.type) {
                             case TERMKEY_TYPE_MOUSE:
-                                handle_mouse();
+                                handle_mouse(&key);
                                 break;
                             case TERMKEY_TYPE_UNICODE:
                             case TERMKEY_TYPE_FUNCTION:
