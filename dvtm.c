@@ -839,6 +839,21 @@ struct {
     [TERMKEY_SYM_PAGEDOWN]  = { "\e[6~", KC_SPECIAL_SYMBOL },
 };
 
+char *termkey_func_seq[] = {
+    [1]        = "\e[11~",
+    [2]        = "\e[12~",
+    [3]        = "\e[13~",
+    [4]        = "\e[14~",
+    [5]        = "\e[15~",
+    [6]        = "\e[17~",
+    [7]        = "\e[18~",
+    [8]        = "\e[19~",
+    [9]        = "\e[20~",
+    [10]       = "\e[21~",
+    [11]       = "\e[23~",
+    [12]       = "\e[24~",
+};
+
 static int unicode_ctrl_raw[256] = {
     ['h'] = 1,
     ['i'] = 1,
@@ -853,7 +868,8 @@ keypress(TermKeyKey *key) {
     int   len;
     int   category = KC_DEFAULT;
     
-    if (key->type == TERMKEY_TYPE_UNICODE) {
+    switch (key->type) {
+    case TERMKEY_TYPE_UNICODE:
         if (key->modifiers == 0) {
             keyseq = key->utf8;
             len = strlen(keyseq);
@@ -870,7 +886,8 @@ keypress(TermKeyKey *key) {
             len = snprintf(_keyseq, 16, "\e[%ld;%du", key->code.codepoint, 1 + key->modifiers);
             keyseq = _keyseq;
         }
-    } else if (key->type == TERMKEY_TYPE_KEYSYM) {
+        break;
+    case TERMKEY_TYPE_KEYSYM:
         if (termkey_sym_book[key->code.sym].seq) {
             category = termkey_sym_book[key->code.sym].category;
             keyseq = termkey_sym_book[key->code.sym].seq;
@@ -908,8 +925,23 @@ keypress(TermKeyKey *key) {
             }
         } else {
             return;
-        }            
-    } else {
+        }
+        break;
+    case TERMKEY_TYPE_FUNCTION:
+        if (key->code.number < 1 ||
+            key->code.number > 12) return;
+        keyseq = termkey_func_seq[key->code.number];
+        len = strlen(keyseq);
+        if (key->modifiers) {
+            int nlen = snprintf(_keyseq, 16, "%s%d~",
+                                keyseq,
+                                1 + key->modifiers);
+            _keyseq[len - 1] = ';';
+            len = nlen;
+            keyseq = _keyseq;        
+        }
+        break;
+    default:
         return;
     }
         
