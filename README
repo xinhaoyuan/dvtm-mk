@@ -11,6 +11,9 @@ Requirements
 In order to build dvtm you will need:
 
  * libncurses or libncursesw for wide character support
+ * [NEW] libtermkey[*] (>= 0.17) for better key handling
+
+*: http://www.leonerd.org.uk/code/libtermkey/
 
 Installation
 ------------
