@@ -1649,6 +1649,58 @@ handle_mouse(TermKeyKey *key) {
 }
 
 static void
+handle_keys(struct trie_cursor_s *cursor) {
+    TermKeyKey key;
+    TermKeyResult tkr;
+    while (1) {
+        tkr = termkey_getkey(tk, &key);
+        if (tkr != TERMKEY_RES_KEY) break;
+                            
+        switch (key.type) {
+        case TERMKEY_TYPE_MOUSE:
+            handle_mouse(&key);
+            break;
+        case TERMKEY_TYPE_UNICODE:
+        case TERMKEY_TYPE_FUNCTION:
+        case TERMKEY_TYPE_KEYSYM:
+        {
+            char repbuf[16];
+            int len = termkey_strfkey(tk, repbuf, 16, &key, 0);
+            debug("KEY: %s %d\n", repbuf, len);
+            int matched = 0;
+            for (int i = 0; i < len; ++ i) {
+                int ret = ta_traverse(&binding_trie, cursor, repbuf[i]);
+                debug("travese %d\n", ret);
+                if (ret < 0) {
+                    ta_traverse_init(&binding_trie, cursor);
+                    matched = -1;
+                    break;
+                } else if (i == len - 1) {
+                    if (ret == 0) {
+                        KeyBinding *binding = ta_get_value(&binding_trie, cursor);
+                        if (ta_traverse(&binding_trie, cursor, ' ') < 0) {
+                            binding->action.cmd(binding->action.args);
+                            ta_traverse_init(&binding_trie, cursor);
+                            matched = 1;
+                        }
+                    } else {
+                        matched = ta_traverse(&binding_trie, cursor, ' ');
+                    }
+                }
+            }
+
+            if (matched < 0) {
+                debug("no match\n");
+                keypress(&key);
+            }
+        } break;
+        default:
+            break;
+        }
+    }
+}
+
+static void
 handle_statusbar(void) {
 	char *p;
 	int r;
@@ -1861,55 +1913,10 @@ main(int argc, char *argv[]) {
 		}
 
 		if (FD_ISSET(STDIN_FILENO, &rd)) {
-                        TermKeyKey key;
-                        TermKeyResult tkr = termkey_waitkey(tk, &key);;
-                        while (tkr == TERMKEY_RES_KEY) {
-                            switch (key.type) {
-                            case TERMKEY_TYPE_MOUSE:
-                                handle_mouse(&key);
-                                break;
-                            case TERMKEY_TYPE_UNICODE:
-                            case TERMKEY_TYPE_FUNCTION:
-                            case TERMKEY_TYPE_KEYSYM:
-                            {
-                                char repbuf[16];
-                                int len = termkey_strfkey(tk, repbuf, 16, &key, 0);
-                                debug("KEY: %s %d\n", repbuf, len);
-                                int matched = 0;
-                                for (int i = 0; i < len; ++ i) {
-                                    int ret = ta_traverse(&binding_trie, &cursor, repbuf[i]);
-                                    debug("travese %d\n", ret);
-                                    if (ret < 0) {
-                                        ta_traverse_init(&binding_trie, &cursor);
-                                        matched = -1;
-                                        break;
-                                    } else if (i == len - 1) {
-                                        if (ret == 0) {
-                                            KeyBinding *binding = ta_get_value(&binding_trie, &cursor);
-                                            if (ta_traverse(&binding_trie, &cursor, ' ') < 0) {
-                                                binding->action.cmd(binding->action.args);
-                                                ta_traverse_init(&binding_trie, &cursor);
-                                                matched = 1;
-                                            }
-                                        } else {
-                                            matched = ta_traverse(&binding_trie, &cursor, ' ');
-                                        }
-                                    }
-                                }
-
-                                if (matched < 0) {
-                                    debug("no match\n");
-                                    keypress(&key);
-                                }
-                            } break;
-                            default:
-                                break;
-                            }
-
-                            tkr = termkey_getkey(tk, &key);
-                        }
-			if (r == 1) /* no data available on pty's */
-				continue;
+                    termkey_advisereadable(tk);
+                    handle_keys(&cursor);
+                    if (r == 1) /* no data available on pty's */
+                        continue;
 		}
 
 		if (cmdfifo.fd != -1 && FD_ISSET(cmdfifo.fd, &rd))
