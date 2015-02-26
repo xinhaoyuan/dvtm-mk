@@ -1662,6 +1662,8 @@ static void send_curs(Vt *t)
 	vt_write(t, keyseq, strlen(keyseq));
 }
 
+bool vt_is_curskeymode(Vt *t) { return t->curskeymode; }
+
 void vt_keypress(Vt *t, int keycode)
 {
 	vt_noscroll(t);
