@@ -95,6 +95,8 @@ static KeyBinding binding_normal[] = {
 	{ MOD" e"     , { copymode,       { NULL }                    } },
 	{ MOD" /"     , { copymode,       { "/" }                     } },
 	{ MOD" p"     , { paste,          { NULL }                    } },
+        { MOD" Enter" , { zoom,           { NULL }                    } },
+        { MOD" -"     , { toggleminimize, { NULL }                    } },
 };
 
 static KeyBinding binding_nav[] = {
@@ -105,6 +107,7 @@ static KeyBinding binding_nav[] = {
     { "Enter"   , { zoom,           { NULL }                    } },
     { "`"       , { bindingmode,    { "0" }                     } },
     { "k"       , { killclient,     { NULL }                    } },
+    { "-"       , { toggleminimize, { NULL }                    } },
 };
 
 static struct {

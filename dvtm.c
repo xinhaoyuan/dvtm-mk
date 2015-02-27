@@ -583,13 +583,13 @@ focus(Client *c) {
             debug("client by (%d, %d) => %d\n", sel_x, sel_y, c ? c->order : -1);
             // for (c = stack; c && !isvisible(c); c = c->snext);
         } else {
-            debug("select %d\n", c->order);
             if (sel_x <  c->x ||
                 sel_x >= c->x + c->w)
                 sel_x = c->x + c->w / 2;
             if (sel_y <  c->y ||
                 sel_y >= c->y + c->h)
                 sel_y = c->y + c->h / 2;
+            debug("select %d (%d, %d)\n", c->order, sel_x, sel_y);
         }
 
 	if (sel == c)
@@ -1578,10 +1578,10 @@ zoom(const char *args[]) {
 			return;
 	detach(c);
 	attach(c);
-	focus(c);
 	if (c->minimized)
 		toggleminimize(NULL);
 	arrange();
+	focus(c);
 }
 
 /* commands for use by mouse bindings */
