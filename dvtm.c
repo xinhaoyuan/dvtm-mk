@@ -1108,7 +1108,7 @@ cleanup(void) {
 		destroy(clients);
 	vt_shutdown();
 	endwin();
-        printf("\e[?1000r");
+        printf("\e[?1000l\e[?1000r");
         termkey_destroy(tk);
 	free(copyreg.data);
 	if (bar.fd > 0)
