@@ -66,10 +66,11 @@ static Layout layouts[] = {
 	{ "[ ]", fullscreen },
 };
 
-#define MOD "C-g"
+#define MOD "A-`"
+#define NR_BINDING_MODE 2
 
 /* you can at most specifiy MAX_ARGS (3) number of arguments */
-static KeyBinding bindings[] = {
+static KeyBinding binding_normal[] = {
 	{ MOD" c"     , { create,         { NULL }                    } },
 	{ MOD" x"     , { killclient,     { NULL }                    } },
 	{ MOD" f"     , { setlayout,      { "[]=" }                   } },
@@ -81,6 +82,7 @@ static KeyBinding bindings[] = {
         { MOD" Down"  , { focusdir,       { "B" }                     } },
         { MOD" Left"  , { focusdir,       { "D" }                     } },
         { MOD" Right" , { focusdir,       { "C" }                     } },
+        { MOD" `"     , { bindingmode,    { "1" }                     } },
 	{ MOD" 1"     , { focusn,         { "1" }                     } },
 	{ MOD" 2"     , { focusn,         { "2" }                     } },
 	{ MOD" 3"     , { focusn,         { "3" }                     } },
@@ -93,8 +95,24 @@ static KeyBinding bindings[] = {
 	{ MOD" e"     , { copymode,       { NULL }                    } },
 	{ MOD" /"     , { copymode,       { "/" }                     } },
 	{ MOD" p"     , { paste,          { NULL }                    } },
-	// { MOD" "MOD   , { send,           { (const char []){MOD, 0} } } },
 };
+
+static KeyBinding binding_nav[] = {
+    { "Up"    , { focusdir,       { "A" }                     } },
+    { "Down"  , { focusdir,       { "B" }                     } },
+    { "Left"  , { focusdir,       { "D" }                     } },
+    { "Right" , { focusdir,       { "C" }                     } },
+    { "Enter" , { bindingmode,    { "0" }                     } },
+};
+
+static struct {
+    KeyBinding *binding;
+    unsigned count;
+} bindings[] = {
+    { binding_normal, LENGTH(binding_normal) },
+    { binding_nav   , LENGTH(binding_nav)    },
+};
+    
 
 static const ColorRule colorrules[] = {
 	{ "", A_NORMAL, &colors[DEFAULT] }, /* default */
@@ -155,47 +173,6 @@ static Action actions[] = {
 
 static char const * const keytable[] = {
 	/* add your custom key escape sequences */
-};
-
-static const char *revert_keytable[KEY_MAX+1] = {
-	[KEY_ENTER]     = "\r",
-	['\n']          = "\n",
-	/* for the arrow keys the CSI / SS3 sequences are not stored here
-	 * because they depend on the current cursor terminal mode
-	 */
-	[KEY_UP]        = "^[A",
-	[KEY_DOWN]      = "^[B",
-	[KEY_RIGHT]     = "^[C",
-	[KEY_LEFT]      = "^[D",
-#ifdef KEY_SUP
-	[KEY_SUP]       = "\e[1;2A",
-#endif
-#ifdef KEY_SDOWN
-	[KEY_SDOWN]     = "\e[1;2B",
-#endif
-	[KEY_SRIGHT]    = "\e[1;2C",
-	[KEY_SLEFT]     = "\e[1;2D",
-	// [KEY_BACKSPACE] = "\177",
-	[KEY_IC]        = "\e[2~",
-	[KEY_DC]        = "\e[3~",
-	[KEY_PPAGE]     = "\e[5~",
-	[KEY_NPAGE]     = "\e[6~",
-	[KEY_HOME]      = "\e[7~",
-	[KEY_END]       = "\e[8~",
-	[KEY_BTAB]      = "\e[Z",
-	[KEY_SUSPEND]   = "\x1A",  /* Ctrl+Z gets mapped to this */
-	[KEY_F(1)]      = "\e[11~",
-	[KEY_F(2)]      = "\e[12~",
-	[KEY_F(3)]      = "\e[13~",
-	[KEY_F(4)]      = "\e[14~",
-	[KEY_F(5)]      = "\e[15~",
-	[KEY_F(6)]      = "\e[17~",
-	[KEY_F(7)]      = "\e[18~",
-	[KEY_F(8)]      = "\e[19~",
-	[KEY_F(9)]      = "\e[20~",
-	[KEY_F(10)]     = "\e[21~",
-	[KEY_F(11)]     = "\e[23~",
-	[KEY_F(12)]     = "\e[24~",
 };
 
 /* editor to use for copy mode. If neither of DVTM_EDITOR, EDITOR and PAGER is

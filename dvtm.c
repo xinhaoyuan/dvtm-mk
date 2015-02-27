@@ -172,6 +172,7 @@ typedef struct {
 #endif
 
 /* commands for use by keybindings */
+static void bindingmode(const char *args[]);
 static void create(const char *args[]);
 static void copymode(const char *args[]);
 static void focusdir(const char* args[]);
@@ -221,8 +222,6 @@ static unsigned int sel_x, sel_y;
 static Client *clients = NULL;
 static char *title;
 static TermKey *tk;
-#include "trie/trie_array.c"
-static struct trie_s binding_trie;
 
 #include "config.h"
 
@@ -243,6 +242,10 @@ static const char *shell;
 static Register copyreg;
 static volatile sig_atomic_t running = true;
 static bool runinall = false;
+#include "trie/trie_array.c"
+static struct trie_s        binding_tries[NR_BINDING_MODE];
+static struct trie_s       *cur_binding;
+static struct trie_cursor_s binding_cursor;
 
 static void
 eprint(const char *errstr, ...) {
@@ -688,7 +691,7 @@ resize(Client *c, int x, int y, int w, int h) {
 
 static Client*
 get_client_by_coord(unsigned int x, unsigned int y) {
-	if (y < way || y >= wah)
+	if (y < way || y >= way + wah)
 		return NULL;
 	if (isarrange(fullscreen))
 		return sel;
@@ -1041,13 +1044,17 @@ setup(void) {
 		}
 		colors[i].pair = vt_color_reserve(colors[i].fg, colors[i].bg);
 	}
-        const char **reps = malloc(sizeof(const char *) * LENGTH(bindings));
-        void **binding_mapping = malloc(sizeof(void *) * LENGTH(bindings));
-        for (unsigned i = 0; i < LENGTH(bindings); ++ i) {
-            reps[i] = bindings[i].keyseq_rep;
-            binding_mapping[i] = &bindings[i];
+        for (unsigned mode = 0; mode < LENGTH(bindings); ++ mode) {
+            const char **reps = malloc(sizeof(const char *) * bindings[mode].count);
+            void **binding_mapping = malloc(sizeof(void *) * bindings[mode].count);
+            for (unsigned i = 0; i < bindings[mode].count; ++ i) {
+                reps[i] = bindings[mode].binding[i].keyseq_rep;
+                binding_mapping[i] = &bindings[mode].binding[i];
+            }
+            ta_create(&binding_tries[mode],
+                      reps, binding_mapping, bindings[mode].count);
         }
-        ta_create(&binding_trie, reps, binding_mapping, LENGTH(bindings));
+        cur_binding = &binding_tries[0];
 	resize_screen();
 	struct sigaction sa;
 	sa.sa_flags = 0;
@@ -1118,6 +1125,15 @@ static char *getcwd_by_pid(Client *c) {
 	char buf[32];
 	snprintf(buf, sizeof buf, "/proc/%d/cwd", c->pid);
 	return realpath(buf, NULL);
+}
+
+static void
+bindingmode(const char *args[]) {
+    if (!args[0]) return;
+    int mode = atoi(args[0]);
+    if (mode < 0 || mode >= LENGTH(bindings)) return;
+    cur_binding = &binding_tries[mode];
+    ta_traverse_init(cur_binding, &binding_cursor);
 }
 
 static void
@@ -1273,7 +1289,9 @@ focusdir(const char* args[]) {
         default:
             break;
         }
-        debug(stderr, "new cond %c is (%d,%d)\n", args[0][0], sel_x, sel_y);
+        fprintf(stderr, "??? %d %d %d\n", way, wah, screen.h);
+        fprintf(stderr, "new cond %c is (%d,%d) => %p\n",
+                args[0][0], sel_x, sel_y, get_client_by_coord(sel_x, sel_y));
     }
 
     focus(get_client_by_coord(sel_x, sel_y));
@@ -1738,7 +1756,8 @@ handle_mouse(TermKeyKey *key) {
 }
 
 static void
-handle_keys(struct trie_cursor_s *cursor) {
+handle_keys(void) {
+    struct trie_cursor_s *cursor = &binding_cursor;
     TermKeyKey key;
     TermKeyResult tkr;
     while (1) {
@@ -1758,22 +1777,22 @@ handle_keys(struct trie_cursor_s *cursor) {
             debug("KEY: %s %d\n", repbuf, len);
             int matched = 0;
             for (int i = 0; i < len; ++ i) {
-                int ret = ta_traverse(&binding_trie, cursor, repbuf[i]);
+                int ret = ta_traverse(cur_binding, cursor, repbuf[i]);
                 debug("travese %d\n", ret);
                 if (ret < 0) {
-                    ta_traverse_init(&binding_trie, cursor);
+                    ta_traverse_init(cur_binding, cursor);
                     matched = -1;
                     break;
                 } else if (i == len - 1) {
                     if (ret == 0) {
-                        KeyBinding *binding = ta_get_value(&binding_trie, cursor);
-                        if (ta_traverse(&binding_trie, cursor, ' ') < 0) {
+                        KeyBinding *binding = ta_get_value(cur_binding, cursor);
+                        if (ta_traverse(cur_binding, cursor, ' ') < 0) {
                             binding->action.cmd(binding->action.args);
-                            ta_traverse_init(&binding_trie, cursor);
+                            ta_traverse_init(cur_binding, cursor);
                             matched = 1;
                         }
                     } else {
-                        matched = ta_traverse(&binding_trie, cursor, ' ');
+                        matched = ta_traverse(cur_binding, cursor, ' ');
                     }
                 }
             }
@@ -1937,7 +1956,6 @@ parse_args(int argc, char *argv[]) {
 
 int
 main(int argc, char *argv[]) {
-        struct trie_cursor_s cursor;
 	sigset_t emptyset, blockset;
 
 	setenv("DVTM", VERSION, 1);
@@ -1952,7 +1970,7 @@ main(int argc, char *argv[]) {
 	sigaddset(&blockset, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &blockset, NULL);
 
-        ta_traverse_init(&binding_trie, &cursor);
+        ta_traverse_init(cur_binding, &binding_cursor);
 	while (running) {
 		int r, nfds = 0;
 		fd_set rd;
@@ -2003,7 +2021,7 @@ main(int argc, char *argv[]) {
 
 		if (FD_ISSET(STDIN_FILENO, &rd)) {
                     termkey_advisereadable(tk);
-                    handle_keys(&cursor);
+                    handle_keys();
                     if (r == 1) /* no data available on pty's */
                         continue;
 		}
