@@ -214,6 +214,8 @@ static void mouse_zoom(const char *args[]);
 static Client* nextvisible(Client *c);
 static void focus(Client *c);
 static void resize(Client *c, int x, int y, int w, int h);
+/* other forward declaration */
+static Client* get_client_by_coord(unsigned int x, unsigned int y);
 extern Screen screen;
 /* work area */
 static unsigned int waw, wah, wax, way;
@@ -566,20 +568,28 @@ detachstack(Client *c) {
 
 static void
 focus(Client *c) {
-	if (!c)
-		for (c = stack; c && !isvisible(c); c = c->snext);
-
-        if (c) {
-            if (!(sel_x >= c->x &&
-                  sel_x <  c->x + c->w &&
-                  sel_y >= c->y &&
-                  sel_y <  c->y + c->h)) {
-                sel_x = c->x + c->w / 2;
-                sel_y = c->y + c->h / 2;
+	if (!c || !isvisible(c)) {
+            if (sel_x <  wax ||
+                sel_x >= wax + waw) {
+                sel_x = wax + waw / 2;
             }
+        
+            if (sel_y <  way ||
+                sel_y >= way + wah) {
+                sel_y = way + wah / 2;
+            }
+
+            c = get_client_by_coord(sel_x, sel_y);
+            debug("client by (%d, %d) => %d\n", sel_x, sel_y, c ? c->order : -1);
+            // for (c = stack; c && !isvisible(c); c = c->snext);
         } else {
-            sel_x = wax + waw / 2;
-            sel_y = way + wah / 2;
+            debug("select %d\n", c->order);
+            if (sel_x <  c->x ||
+                sel_x >= c->x + c->w)
+                sel_x = c->x + c->w / 2;
+            if (sel_y <  c->y ||
+                sel_y >= c->y + c->h)
+                sel_y = c->y + c->h / 2;
         }
 
 	if (sel == c)
@@ -1071,18 +1081,10 @@ setup(void) {
 
 static void
 destroy(Client *c) {
-	if (sel == c)
-		focusnextnm(NULL);
 	detach(c);
 	detachstack(c);
 	if (sel == c) {
-		Client *next = nextvisible(clients);
-		if (next) {
-			focus(next);
-			toggleminimize(NULL);
-		} else {
-			sel = NULL;
-		}
+                sel = NULL;
 	}
 	if (lastsel == c)
 		lastsel = NULL;
@@ -1289,9 +1291,8 @@ focusdir(const char* args[]) {
         default:
             break;
         }
-        fprintf(stderr, "??? %d %d %d\n", way, wah, screen.h);
-        fprintf(stderr, "new cond %c is (%d,%d) => %p\n",
-                args[0][0], sel_x, sel_y, get_client_by_coord(sel_x, sel_y));
+        debug("new cond %c is (%d,%d) => %p\n",
+              args[0][0], sel_x, sel_y, get_client_by_coord(sel_x, sel_y));
     }
 
     focus(get_client_by_coord(sel_x, sel_y));
@@ -1372,7 +1373,8 @@ static void
 killclient(const char *args[]) {
 	if (!sel)
 		return;
-	debug("killing client with pid: %d\n", sel->pid);
+	// debug("killing client with pid: %d\n", sel->pid);
+        debug("killing client %d with pid: %d\n", sel->order, sel->pid);
 	kill(-sel->pid, SIGKILL);
 }
 

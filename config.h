@@ -98,12 +98,13 @@ static KeyBinding binding_normal[] = {
 };
 
 static KeyBinding binding_nav[] = {
-    { "Up"    , { focusdir,       { "A" }                     } },
-    { "Down"  , { focusdir,       { "B" }                     } },
-    { "Left"  , { focusdir,       { "D" }                     } },
-    { "Right" , { focusdir,       { "C" }                     } },
-    { "Enter" , { zoom,           { NULL }                    } },
-    { "`"     , { bindingmode,    { "0" }                     } },
+    { "Up"      , { focusdir,       { "A" }                     } },
+    { "Down"    , { focusdir,       { "B" }                     } },
+    { "Left"    , { focusdir,       { "D" }                     } },
+    { "Right"   , { focusdir,       { "C" }                     } },
+    { "Enter"   , { zoom,           { NULL }                    } },
+    { "`"       , { bindingmode,    { "0" }                     } },
+    { "k"       , { killclient,     { NULL }                    } },
 };
 
 static struct {
