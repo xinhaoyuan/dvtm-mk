@@ -102,7 +102,8 @@ static KeyBinding binding_nav[] = {
     { "Down"  , { focusdir,       { "B" }                     } },
     { "Left"  , { focusdir,       { "D" }                     } },
     { "Right" , { focusdir,       { "C" }                     } },
-    { "Enter" , { bindingmode,    { "0" }                     } },
+    { "Enter" , { zoom,           { NULL }                    } },
+    { "`"     , { bindingmode,    { "0" }                     } },
 };
 
 static struct {
