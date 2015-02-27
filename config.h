@@ -66,7 +66,7 @@ static Layout layouts[] = {
 	{ "[ ]", fullscreen },
 };
 
-#define MOD "C-z"
+#define MOD "C-g"
 
 /* you can at most specifiy MAX_ARGS (3) number of arguments */
 static KeyBinding bindings[] = {
@@ -77,6 +77,10 @@ static KeyBinding bindings[] = {
 	{ MOD" b"     , { setlayout,      { "TTT" }                   } },
 	{ MOD" m"     , { setlayout,      { "[ ]" }                   } },
 	{ MOD" Space" , { setlayout,      { NULL }                    } },
+        { MOD" Up"    , { focusdir,       { "A" }                     } },
+        { MOD" Down"  , { focusdir,       { "B" }                     } },
+        { MOD" Left"  , { focusdir,       { "D" }                     } },
+        { MOD" Right" , { focusdir,       { "C" }                     } },
 	{ MOD" 1"     , { focusn,         { "1" }                     } },
 	{ MOD" 2"     , { focusn,         { "2" }                     } },
 	{ MOD" 3"     , { focusn,         { "3" }                     } },

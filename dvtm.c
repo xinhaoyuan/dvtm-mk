@@ -174,6 +174,7 @@ typedef struct {
 /* commands for use by keybindings */
 static void create(const char *args[]);
 static void copymode(const char *args[]);
+static void focusdir(const char* args[]);
 static void focusn(const char *args[]);
 static void focusnext(const char *args[]);
 static void focusnextnm(const char *args[]);
@@ -213,7 +214,10 @@ static Client* nextvisible(Client *c);
 static void focus(Client *c);
 static void resize(Client *c, int x, int y, int w, int h);
 extern Screen screen;
+/* work area */
 static unsigned int waw, wah, wax, way;
+/* used for selecting by direction */
+static unsigned int sel_x, sel_y;
 static Client *clients = NULL;
 static char *title;
 static TermKey *tk;
@@ -561,6 +565,20 @@ static void
 focus(Client *c) {
 	if (!c)
 		for (c = stack; c && !isvisible(c); c = c->snext);
+
+        if (c) {
+            if (!(sel_x >= c->x &&
+                  sel_x <  c->x + c->w &&
+                  sel_y >= c->y &&
+                  sel_y <  c->y + c->h)) {
+                sel_x = c->x + c->w / 2;
+                sel_y = c->y + c->h / 2;
+            }
+        } else {
+            sel_x = wax + waw / 2;
+            sel_y = way + wah / 2;
+        }
+
 	if (sel == c)
 		return;
 	lastsel = sel;
@@ -1221,6 +1239,45 @@ copymode(const char *args[]) {
 		vt_write(sel->editor, args[0], strlen(args[0]));
 }
 
+static void
+focusdir(const char* args[]) {
+    if (!args[0]) return;
+    
+    if (sel && isvisible(sel)) {
+        /* be careful to count the border width in */
+        switch (args[0][0]) {
+        case 'A':
+            /* up */
+            if (sel->y > way + 1)
+                sel_y = sel->y - 2;
+            else sel_y = way;
+            break;
+        case 'B':
+            /* down */
+            sel_y = sel->y + sel->h + 1;
+            if (sel_y >= way + wah)
+                sel_y = way + wah - 1;
+            break;
+        case 'D':
+            /* left */
+            if (sel->x > wax + 1)
+                sel_x = sel->x - 2;
+            else sel_x = wax;
+            break;
+        case 'C':
+            /* right */
+            sel_x = sel->x + sel->w + 1;
+            if (sel_x > wax + waw)
+                sel_x = wax + waw - 1;
+            break;
+        default:
+            break;
+        }
+        debug(stderr, "new cond %c is (%d,%d)\n", args[0][0], sel_x, sel_y);
+    }
+
+    focus(get_client_by_coord(sel_x, sel_y));
+}
 static void
 focusn(const char *args[]) {
 	for (Client *c = nextvisible(clients); c; c = nextvisible(c->next)) {
