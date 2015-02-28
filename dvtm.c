@@ -844,147 +844,26 @@ viewprevtag(const char *args[]) {
 	tagschanged();
 }
 
-#define KC_DEFAULT        0
-#define KC_C0_SYMBOL      1
-#define KC_SPECIAL_SYMBOL 2
-#define KC_ARROW_SYMBOL   3
-struct {
-    char *seq;
-    int   category;
-} termkey_sym_book[] = {
-    [TERMKEY_SYM_BACKSPACE] = { "\x08", KC_C0_SYMBOL },
-    [TERMKEY_SYM_TAB]       = { "\x09", KC_C0_SYMBOL },
-    [TERMKEY_SYM_ENTER]     = { "\x0d", KC_C0_SYMBOL },
-    [TERMKEY_SYM_ESCAPE]    = { "\x1b", KC_C0_SYMBOL },
-    [TERMKEY_SYM_SPACE]     = { "\x20", KC_C0_SYMBOL },
-    [TERMKEY_SYM_DEL]       = { "\x7f", KC_C0_SYMBOL },
-    [TERMKEY_SYM_UP]        = { "\e[A", KC_ARROW_SYMBOL },
-    [TERMKEY_SYM_DOWN]      = { "\e[B", KC_ARROW_SYMBOL },
-    [TERMKEY_SYM_LEFT]      = { "\e[D", KC_ARROW_SYMBOL },
-    [TERMKEY_SYM_RIGHT]     = { "\e[C", KC_ARROW_SYMBOL },
-    [TERMKEY_SYM_HOME]      = { "\e[H", KC_ARROW_SYMBOL },
-    [TERMKEY_SYM_END]       = { "\e[F", KC_ARROW_SYMBOL },
-    [TERMKEY_SYM_INSERT]    = { "\e[2~", KC_SPECIAL_SYMBOL },
-    [TERMKEY_SYM_DELETE]    = { "\e[3~", KC_SPECIAL_SYMBOL },
-    [TERMKEY_SYM_PAGEUP]    = { "\e[5~", KC_SPECIAL_SYMBOL },
-    [TERMKEY_SYM_PAGEDOWN]  = { "\e[6~", KC_SPECIAL_SYMBOL },
-};
-
-char *termkey_func_seq[] = {
-    [1]        = "\e[11~",
-    [2]        = "\e[12~",
-    [3]        = "\e[13~",
-    [4]        = "\e[14~",
-    [5]        = "\e[15~",
-    [6]        = "\e[17~",
-    [7]        = "\e[18~",
-    [8]        = "\e[19~",
-    [9]        = "\e[20~",
-    [10]       = "\e[21~",
-    [11]       = "\e[23~",
-    [12]       = "\e[24~",
-};
-
-static int unicode_ctrl_raw[256] = {
-    ['h'] = 1,
-    ['i'] = 1,
-    ['m'] = 1,
-    ['['] = 1
-};
-
 static void
 keypress(TermKeyKey *key) {
-    char _keyseq[16];
-    char *keyseq;
-    int   len;
-    int   category = KC_DEFAULT;
+    char  keyseq_buf[20];
+    int   len = termkey_ktos(tk, keyseq_buf, LENGTH(keyseq_buf), key);
     
-    switch (key->type) {
-    case TERMKEY_TYPE_UNICODE:
-        if (key->modifiers == 0) {
-            keyseq = key->utf8;
-            len = strlen(keyseq);
-        } else if (key->modifiers == TERMKEY_KEYMOD_CTRL &&
-                   key->code.codepoint >= 'a' && key->code.codepoint <= 'z' &&
-                   unicode_ctrl_raw[key->code.codepoint] == 0) {
-            _keyseq[0] = key->code.codepoint - 'a' + 1;
-            keyseq = _keyseq;
-            len = 1;
-        } else if (key->modifiers == TERMKEY_KEYMOD_ALT) {
-            len = snprintf(_keyseq, 16, "\e%s", key->utf8);
-            keyseq = _keyseq;
-        } else {
-            len = snprintf(_keyseq, 16, "\e[%ld;%du", key->code.codepoint, 1 + key->modifiers);
-            keyseq = _keyseq;
-        }
-        break;
-    case TERMKEY_TYPE_KEYSYM:
-        if (termkey_sym_book[key->code.sym].seq) {
-            category = termkey_sym_book[key->code.sym].category;
-            keyseq = termkey_sym_book[key->code.sym].seq;
-            len = strlen(keyseq);
-            
-            if (key->modifiers) {
-                switch (category) {
-                case KC_C0_SYMBOL:
-                    if (key->modifiers == TERMKEY_KEYMOD_ALT) {
-                        len = snprintf(_keyseq, 16, "\e%s", keyseq);
-                        keyseq = _keyseq;
-                    } else {
-                        /* fallback to unicode for other modifiers */
-                        len = snprintf(_keyseq, 16, "\e[%d;%du",
-                                       keyseq[0], 1 + key->modifiers);
-                        keyseq = _keyseq;
-                    }
-                    break;
-                case KC_SPECIAL_SYMBOL: { 
-                    int nlen = snprintf(_keyseq, 16, "%s%d~",
-                                        keyseq,
-                                        1 + key->modifiers);
-                    _keyseq[len - 1] = ';';
-                    len = nlen;
-                    keyseq = _keyseq;
-                }
-                    break;
-                case KC_ARROW_SYMBOL:
-                    len = snprintf(_keyseq, 16, "\e[1;%d%s",
-                                   1 + key->modifiers,
-                                   keyseq + 2); /* Ignore CSI */
-                    keyseq = _keyseq;
-                    break;
-                }
-            }
-        } else {
-            return;
-        }
-        break;
-    case TERMKEY_TYPE_FUNCTION:
-        if (key->code.number < 1 ||
-            key->code.number > 12) return;
-        keyseq = termkey_func_seq[key->code.number];
-        len = strlen(keyseq);
-        if (key->modifiers) {
-            int nlen = snprintf(_keyseq, 16, "%s%d~",
-                                keyseq,
-                                1 + key->modifiers);
-            _keyseq[len - 1] = ';';
-            len = nlen;
-            keyseq = _keyseq;        
-        }
-        break;
-    default:
-        return;
-    }
+    if (len <= 0 || len >= LENGTH(keyseq_buf)) return;
         
     for (Client *c = runinall ? nextvisible(clients) : sel; c; c = nextvisible(c->next)) {
         if (is_content_visible(c)) {
             c->urgent = false;
-            if (category == KC_ARROW_SYMBOL &&
-                vt_is_curskeymode(c->term) && len >= 2) {
+            if (vt_is_curskeymode(c->term) &&
+                len == 3 &&
+                keyseq_buf[0] == '\e' &&
+                keyseq_buf[1] == '['  &&
+                keyseq_buf[2] >= 'A'  &&
+                keyseq_buf[2] <= 'Z') {
                 vt_write(c->term, "\eO", 2); /* replace \e[ to \eO */
-                vt_write(c->term, keyseq + 2, len - 1);
+                vt_write(c->term, keyseq_buf + 2, len - 2);
             } else {
-                vt_write(c->term, keyseq, len);
+                vt_write(c->term, keyseq_buf, len);
             }
         }
         if (!runinall)
