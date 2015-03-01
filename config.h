@@ -108,6 +108,8 @@ static KeyBinding binding_nav[] = {
     { "Enter"   , { bindingmode,    { "0" }                     } },
     { "k"       , { killclient,     { NULL }                    } },
     { "-"       , { toggleminimize, { NULL }                    } },
+    { "PageUp"  , { scrollback,     { "-1" }                    } },
+    { "PageDown", { scrollback,     { "+1" }                    } },
 };
 
 static struct {
