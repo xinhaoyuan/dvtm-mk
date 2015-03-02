@@ -968,7 +968,7 @@ setup(void) {
                 reps[i] = bindings[mode].binding[i].keyseq_rep;
                 binding_mapping[i] = &bindings[mode].binding[i];
             }
-            ta_create(&binding_tries[mode],
+            trie_create(&binding_tries[mode],
                       reps, binding_mapping, bindings[mode].count);
         }
         cur_binding = &binding_tries[0];
@@ -1042,7 +1042,7 @@ bindingmode(const char *args[]) {
     int mode = atoi(args[0]);
     if (mode < 0 || mode >= LENGTH(bindings)) return;
     cur_binding = &binding_tries[mode];
-    ta_traverse_init(cur_binding, &binding_cursor);
+    trie_traverse_init(cur_binding, &binding_cursor);
 }
 
 static void
@@ -1686,22 +1686,22 @@ handle_keys(void) {
             debug("KEY: %s %d\n", repbuf, len);
             int matched = 0;
             for (int i = 0; i < len; ++ i) {
-                int ret = ta_traverse(cur_binding, cursor, repbuf[i]);
+                int ret = trie_traverse(cur_binding, cursor, repbuf[i]);
                 debug("travese %d %c\n", ret, ret >= 0 ? ret : ' ');
                 if (ret < 0) {
-                    ta_traverse_init(cur_binding, cursor);
+                    trie_traverse_init(cur_binding, cursor);
                     matched = -1;
                     break;
                 } else if (i == len - 1) {
                     if (ret == 0) {
-                        KeyBinding *binding = ta_get_value(cur_binding, cursor);
-                        if (ta_traverse(cur_binding, cursor, ' ') < 0) {
+                        KeyBinding *binding = trie_get_value(cur_binding, cursor);
+                        if (trie_traverse(cur_binding, cursor, ' ') < 0) {
                             binding->action.cmd(binding->action.args);
-                            ta_traverse_init(cur_binding, cursor);
+                            trie_traverse_init(cur_binding, cursor);
                             matched = 1;
                         }
                     } else {
-                        matched = ta_traverse(cur_binding, cursor, ' ');
+                        matched = trie_traverse(cur_binding, cursor, ' ');
                     }
                 }
             }
@@ -1879,7 +1879,7 @@ main(int argc, char *argv[]) {
 	sigaddset(&blockset, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &blockset, NULL);
 
-        ta_traverse_init(cur_binding, &binding_cursor);
+        trie_traverse_init(cur_binding, &binding_cursor);
 	while (running) {
 		int r, nfds = 0;
 		fd_set rd;
