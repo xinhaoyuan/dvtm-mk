@@ -202,6 +202,8 @@ static void toggletag(const char *args[]);
 static void toggleview(const char *args[]);
 static void viewprevtag(const char *args[]);
 static void view(const char *args[]);
+static void viewsmallertag(const char *args[]);
+static void viewlargertag(const char *args[]);
 static void zoom(const char *args[]);
 
 /* commands for use by mouse bindings */
@@ -836,6 +838,32 @@ view(const char *args[]) {
 		tagset[seltags] = newtagset;
 		tagschanged();
 	}
+}
+
+static void
+viewsmallertag(const char *args[]) {
+    unsigned int newtagset = tagset[seltags];
+    int i;
+    for (i = LENGTH(tags) - 1; i > 1 && ((newtagset & (1 << i)) == 0); -- i) ;
+    newtagset = (1 << (i - 1)) & TAGMASK;
+    if (tagset[seltags] != newtagset && newtagset) {
+        seltags ^= 1; /* toggle sel tagset */
+        tagset[seltags] = newtagset;
+        tagschanged();
+    }    
+}
+
+static void
+viewlargertag(const char *args[]) {
+    unsigned int newtagset = tagset[seltags];
+    int i;
+    for (i = 0; i < LENGTH(tags) - 2 && ((newtagset & (1 << i)) == 0); ++ i) ;
+    newtagset = (1 << (i + 1)) & TAGMASK;
+    if (tagset[seltags] != newtagset && newtagset) {
+        seltags ^= 1; /* toggle sel tagset */
+        tagset[seltags] = newtagset;
+        tagschanged();
+    }    
 }
 
 static void
@@ -1659,7 +1687,7 @@ handle_keys(void) {
             int matched = 0;
             for (int i = 0; i < len; ++ i) {
                 int ret = ta_traverse(cur_binding, cursor, repbuf[i]);
-                debug("travese %d\n", ret);
+                debug("travese %d %c\n", ret, ret >= 0 ? ret : ' ');
                 if (ret < 0) {
                     ta_traverse_init(cur_binding, cursor);
                     matched = -1;
