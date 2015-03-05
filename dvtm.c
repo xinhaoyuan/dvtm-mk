@@ -951,7 +951,7 @@ static void
 setup(void) {
 	shell = getshell();
 	setlocale(LC_CTYPE, "");
-        tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_CTRLC);
+        tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_SPACESYMBOL | TERMKEY_FLAG_CTRLC);
         printf("\e[?1000s\e[?1000h");
 	initscr();
 	start_color();
