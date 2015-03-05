@@ -339,7 +339,7 @@ drawbar(void) {
 	getyx(stdscr, sy, sx);
 	attrset(BAR_ATTR);
 	move(bar.y, 0);
-
+        
 	for (unsigned int i = 0; i < LENGTH(tags); i++){
 		if (tagset[seltags] & (1 << i))
 			attrset(TAG_SEL);
@@ -351,6 +351,16 @@ drawbar(void) {
 			attrset(TAG_NORMAL);
 		printw(TAG_SYMBOL, tags[i]);
 	}
+
+        attrset(TAG_NORMAL);
+        unsigned kb_mode = cur_binding - binding_tries;
+        if (binding_cursor.pos > 0) {
+            /* binding matching on going */
+            attrset(COLOR(BLUE) | A_NORMAL);
+        } else {
+            attrset(TAG_NORMAL);
+        }
+        printw("<%d>", kb_mode);
 
 	attrset(TAG_NORMAL);
 	addstr(layout->symbol);
@@ -1710,6 +1720,8 @@ handle_keys(void) {
                 debug("no match\n");
                 keypress(&key);
             }
+
+            drawbar();
         } break;
         default:
             break;
@@ -1931,10 +1943,11 @@ main(int argc, char *argv[]) {
 		if (FD_ISSET(STDIN_FILENO, &rd)) {
                     termkey_advisereadable(tk);
                     handle_keys();
-                    if (r == 1) /* no data available on pty's */
-                        continue;
+                    -- r;
 		}
 
+                if (r == 0) goto redraw_focus;
+                    
 		if (cmdfifo.fd != -1 && FD_ISSET(cmdfifo.fd, &rd))
 			handle_cmdfifo();
 
@@ -1958,6 +1971,7 @@ main(int argc, char *argv[]) {
 			}
 		}
 
+          redraw_focus:
 		if (is_content_visible(sel)) {
 			draw_content(sel);
 			curs_set(vt_cursor_visible(sel->term));
