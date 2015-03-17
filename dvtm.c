@@ -580,34 +580,40 @@ detachstack(Client *c) {
 
 static void
 focus(Client *c) {
+	if (!c) c = sel;
 	if (!c || !isvisible(c)) {
-            if (sel_x <  wax ||
-                sel_x >= wax + waw) {
-                sel_x = wax + waw / 2;
-            }
+		if (sel_x <  wax ||
+		    sel_x >= wax + waw) {
+			sel_x = wax + waw / 2;
+		}
         
-            if (sel_y <  way ||
-                sel_y >= way + wah) {
-                sel_y = way + wah / 2;
-            }
+		if (sel_y <  way ||
+		    sel_y >= way + wah) {
+			sel_y = way + wah / 2;
+		}
 
-            c = get_client_by_coord(sel_x, sel_y);
-            debug("client by (%d, %d) => %d\n", sel_x, sel_y, c ? c->order : -1);
-            // for (c = stack; c && !isvisible(c); c = c->snext);
+		c = get_client_by_coord(sel_x, sel_y);
+		debug("client by (%d, %d) => %d\n", sel_x, sel_y, c ? c->order : -1);
+		// for (c = stack; c && !isvisible(c); c = c->snext);
         } else {
-            if (sel_x <  c->x ||
-                sel_x >= c->x + c->w)
-                sel_x = c->x + c->w / 2;
-            if (sel_y <  c->y ||
-                sel_y >= c->y + c->h)
-                sel_y = c->y + c->h / 2;
-            debug("select %d (%d, %d)\n", c->order, sel_x, sel_y);
+		if (sel_x <  c->x ||
+		    sel_x >= c->x + c->w)
+			sel_x = c->x + c->w / 2;
+		if (sel_y <  c->y ||
+		    sel_y >= c->y + c->h)
+			sel_y = c->y + c->h / 2;
+		debug("select %d (%d, %d)\n", c->order, sel_x, sel_y);
         }
 
 	if (sel == c)
 		return;
-	lastsel = sel;
+	
+	if (sel && !isvisible(sel))
+		lastsel = NULL;
+	else
+		lastsel = sel;
 	sel = c;
+	
 	if (lastsel) {
 		lastsel->urgent = false;
 		if (!isarrange(fullscreen)) {
@@ -951,8 +957,12 @@ static void
 setup(void) {
 	shell = getshell();
 	setlocale(LC_CTYPE, "");
-        tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_SPACESYMBOL | TERMKEY_FLAG_CTRLC);
-        printf("\e[?1000s\e[?1000h");
+	tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_SPACESYMBOL | TERMKEY_FLAG_CTRLC);
+	if (!tk) {
+		fprintf(stderr, "Cannot initialize termkey, errno = %d\n", errno);
+		exit(-1);
+	}
+	printf("\e[?1000s\e[?1000h");
 	initscr();
 	start_color();
 	noecho();
@@ -1941,9 +1951,9 @@ main(int argc, char *argv[]) {
 		}
 
 		if (FD_ISSET(STDIN_FILENO, &rd)) {
-                    termkey_advisereadable(tk);
-                    handle_keys();
-                    -- r;
+			termkey_advisereadable(tk);
+			handle_keys();
+			-- r;
 		}
 
                 if (r == 0) goto redraw_focus;
