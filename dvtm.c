@@ -674,6 +674,8 @@ term_urgent_handler(Vt *term) {
 	c->urgent = true;
 	printf("\a");
 	fflush(stdout);
+	if (!isarrange(fullscreen) || sel == c)
+		draw_border(c);
 	drawbar();
 }
 

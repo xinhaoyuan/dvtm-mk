@@ -14,13 +14,13 @@
 enum {
 	DEFAULT,
 	BLUE,
-        YELLOW
+	YELLOW
 };
 
 static Color colors[] = {
 	[DEFAULT] = { .fg = -1,           .bg = -1, .fg256 = -1,  .bg256 = -1, },
 	[BLUE]    = { .fg = COLOR_BLUE,   .bg = -1, .fg256 = 68,  .bg256 = -1, },
-        [YELLOW]  = { .fg = COLOR_YELLOW, .bg = -1, .fg256 = 226, .bg256 = -1, },
+	[YELLOW]  = { .fg = COLOR_YELLOW, .bg = -1, .fg256 = 226, .bg256 = -1, },
 };
 
 #define COLOR(c)        COLOR_PAIR(colors[c].pair)
@@ -29,7 +29,7 @@ static Color colors[] = {
 /* curses attributes for normal (not selected) windows */
 #define NORMAL_ATTR     (COLOR(DEFAULT) | A_NORMAL)
 /* curses attributes for a window with pending urgent flag */
-#define URGENT_ATTR     NORMAL_ATTR
+#define URGENT_ATTR     (COLOR(BLUE) | A_NORMAL | A_BLINK)
 /* curses attributes for the status bar */
 #define BAR_ATTR        (COLOR(BLUE) | A_NORMAL)
 /* status bar (command line option -s) position */
@@ -51,7 +51,7 @@ static Color colors[] = {
 /* curses attributes for not selected tags which contain windows */
 #define TAG_OCCUPIED (COLOR(BLUE) | A_NORMAL)
 /* curses attributes for not selected tags which with urgent windows */
-#define TAG_URGENT (COLOR(BLUE) | A_NORMAL | A_BLINK)
+#define TAG_URGENT   (COLOR(BLUE) | A_NORMAL | A_BLINK)
 
 const char tags[][8] = { "1", "2", "3", "4", "5" };
 
@@ -80,11 +80,11 @@ static KeyBinding binding_normal[] = {
 	{ MOD" b"       , { setlayout,      { "TTT" }                   } },
 	{ MOD" m"       , { setlayout,      { "[ ]" }                   } },
 	{ MOD" Space"   , { setlayout,      { NULL }                    } },
-        { MOD" Up"      , { focusdir,       { "A" }                     } },
-        { MOD" Down"    , { focusdir,       { "B" }                     } },
-        { MOD" Left"    , { focusdir,       { "D" }                     } },
-        { MOD" Right"   , { focusdir,       { "C" }                     } },
-        { MOD" Enter"   , { bindingmode,    { "1" }                     } },
+	{ MOD" Up"      , { focusdir,       { "A" }                     } },
+	{ MOD" Down"    , { focusdir,       { "B" }                     } },
+	{ MOD" Left"    , { focusdir,       { "D" }                     } },
+	{ MOD" Right"   , { focusdir,       { "C" }                     } },
+	{ MOD" Enter"   , { bindingmode,    { "1" }                     } },
 	{ MOD" 1"       , { focusn,         { "1" }                     } },
 	{ MOD" 2"       , { focusn,         { "2" }                     } },
 	{ MOD" 3"       , { focusn,         { "3" }                     } },
@@ -97,57 +97,57 @@ static KeyBinding binding_normal[] = {
 	{ MOD" ?"       , { copymode,       { "/" }                     } },
 	{ MOD" /"       , { copymode,       { NULL }                    } },
 	{ MOD" p"       , { paste,          { NULL }                    } },
-        { MOD" z"       , { zoom,           { NULL }                    } },
-        { MOD" -"       , { toggleminimize, { NULL }                    } },
-        { MOD" A-Left"  , { viewsmallertag, { NULL }                    } },
-        { MOD" A-Right" , { viewlargertag,  { NULL }                    } },
-        { MOD" A-1"     , { view,           { tags[0] }                 } },
-        { MOD" A-2"     , { view,           { tags[1] }                 } },
-        { MOD" A-3"     , { view,           { tags[2] }                 } },
-        { MOD" A-4"     , { view,           { tags[3] }                 } },
-        { MOD" A-5"     , { view,           { tags[4] }                 } },
+	{ MOD" z"       , { zoom,           { NULL }                    } },
+	{ MOD" -"       , { toggleminimize, { NULL }                    } },
+	{ MOD" A-Left"  , { viewsmallertag, { NULL }                    } },
+	{ MOD" A-Right" , { viewlargertag,  { NULL }                    } },
+	{ MOD" A-1"     , { view,           { tags[0] }                 } },
+	{ MOD" A-2"     , { view,           { tags[1] }                 } },
+	{ MOD" A-3"     , { view,           { tags[2] }                 } },
+	{ MOD" A-4"     , { view,           { tags[3] }                 } },
+	{ MOD" A-5"     , { view,           { tags[4] }                 } },
 };
 
 static KeyBinding binding_nav[] = {
-    { "Up"      , { focusdir,       { "A" }                     } },
-    { "Down"    , { focusdir,       { "B" }                     } },
-    { "Left"    , { focusdir,       { "D" }                     } },
-    { "Right"   , { focusdir,       { "C" }                     } },
-    { "z"       , { zoom,           { NULL }                    } },
-    { "Enter"   , { bindingmode,    { "0" }                     } },
-    { "k"       , { killclient,     { NULL }                    } },
-    { "-"       , { toggleminimize, { NULL }                    } },
-    { "1"       , { focusn,         { "1" }                     } },
-    { "2"       , { focusn,         { "2" }                     } },
-    { "3"       , { focusn,         { "3" }                     } },
-    { "4"       , { focusn,         { "4" }                     } },
-    { "5"       , { focusn,         { "5" }                     } },
-    { "6"       , { focusn,         { "6" }                     } },
-    { "7"       , { focusn,         { "7" }                     } },
-    { "8"       , { focusn,         { "8" }                     } },
-    { "9"       , { focusn,         { "9" }                     } },
-    { "A-Left"  , { viewsmallertag, { NULL }                    } },
-    { "A-Right" , { viewlargertag,  { NULL }                    } },
-    { "A-1"     , { view,           { tags[0] }                 } },
-    { "A-2"     , { view,           { tags[1] }                 } },
-    { "A-3"     , { view,           { tags[2] }                 } },
-    { "A-4"     , { view,           { tags[3] }                 } },
-    { "A-5"     , { view,           { tags[4] }                 } },
-    { "/ 1"     , { toggleview,     { tags[0] }                 } },
-    { "/ 2"     , { toggleview,     { tags[1] }                 } },
-    { "/ 3"     , { toggleview,     { tags[2] }                 } },
-    { "/ 4"     , { toggleview,     { tags[3] }                 } },
-    { "/ 5"     , { toggleview,     { tags[4] }                 } },
+	{ "Up"      , { focusdir,       { "A" }                     } },
+	{ "Down"    , { focusdir,       { "B" }                     } },
+	{ "Left"    , { focusdir,       { "D" }                     } },
+	{ "Right"   , { focusdir,       { "C" }                     } },
+	{ "z"       , { zoom,           { NULL }                    } },
+	{ "Enter"   , { bindingmode,    { "0" }                     } },
+	{ "k"       , { killclient,     { NULL }                    } },
+	{ "-"       , { toggleminimize, { NULL }                    } },
+	{ "1"       , { focusn,         { "1" }                     } },
+	{ "2"       , { focusn,         { "2" }                     } },
+	{ "3"       , { focusn,         { "3" }                     } },
+	{ "4"       , { focusn,         { "4" }                     } },
+	{ "5"       , { focusn,         { "5" }                     } },
+	{ "6"       , { focusn,         { "6" }                     } },
+	{ "7"       , { focusn,         { "7" }                     } },
+	{ "8"       , { focusn,         { "8" }                     } },
+	{ "9"       , { focusn,         { "9" }                     } },
+	{ "A-Left"  , { viewsmallertag, { NULL }                    } },
+	{ "A-Right" , { viewlargertag,  { NULL }                    } },
+	{ "A-1"     , { view,           { tags[0] }                 } },
+	{ "A-2"     , { view,           { tags[1] }                 } },
+	{ "A-3"     , { view,           { tags[2] }                 } },
+	{ "A-4"     , { view,           { tags[3] }                 } },
+	{ "A-5"     , { view,           { tags[4] }                 } },
+	{ "/ 1"     , { toggleview,     { tags[0] }                 } },
+	{ "/ 2"     , { toggleview,     { tags[1] }                 } },
+	{ "/ 3"     , { toggleview,     { tags[2] }                 } },
+	{ "/ 4"     , { toggleview,     { tags[3] }                 } },
+	{ "/ 5"     , { toggleview,     { tags[4] }                 } },
 };
 
 static struct {
-    KeyBinding *binding;
-    unsigned count;
+	KeyBinding *binding;
+	unsigned count;
 } bindings[] = {
-    { binding_normal, LENGTH(binding_normal) },
-    { binding_nav   , LENGTH(binding_nav)    },
+	{ binding_normal, LENGTH(binding_normal) },
+	{ binding_nav   , LENGTH(binding_nav)    },
 };
-    
+
 
 static const ColorRule colorrules[] = {
 	{ "", A_NORMAL, &colors[DEFAULT] }, /* default */
