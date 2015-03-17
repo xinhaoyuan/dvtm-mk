@@ -608,15 +608,13 @@ focus(Client *c) {
 	if (sel == c)
 		return;
 	
-	if (sel && !isvisible(sel))
-		lastsel = NULL;
-	else
-		lastsel = sel;
+	lastsel = sel;
 	sel = c;
 	
 	if (lastsel) {
 		lastsel->urgent = false;
-		if (!isarrange(fullscreen)) {
+		if (isvisible(lastsel) &&
+		    !isarrange(fullscreen)) {
 			draw_border(lastsel);
 			wnoutrefresh(lastsel->window);
 		}
