@@ -116,7 +116,7 @@ typedef struct {
 } Action;
 
 typedef struct {
-        const char *keyseq_rep;
+	const char *keyseq_rep;
 	Action action;
 } KeyBinding;
 
@@ -339,7 +339,7 @@ drawbar(void) {
 	getyx(stdscr, sy, sx);
 	attrset(BAR_ATTR);
 	move(bar.y, 0);
-        
+
 	for (unsigned int i = 0; i < LENGTH(tags); i++){
 		if (tagset[seltags] & (1 << i))
 			attrset(TAG_SEL);
@@ -352,15 +352,15 @@ drawbar(void) {
 		printw(TAG_SYMBOL, tags[i]);
 	}
 
-        attrset(TAG_NORMAL);
-        unsigned kb_mode = cur_binding - binding_tries;
-        if (binding_cursor.pos > 0) {
-            /* binding matching on going */
-            attrset(COLOR(BLUE) | A_NORMAL);
-        } else {
-            attrset(TAG_NORMAL);
-        }
-        printw("<%d>", kb_mode);
+	attrset(TAG_NORMAL);
+	unsigned kb_mode = cur_binding - binding_tries;
+	if (binding_cursor.pos > 0) {
+		/* binding matching on going */
+		attrset(COLOR(BLUE) | A_NORMAL);
+	} else {
+		attrset(TAG_NORMAL);
+	}
+	printw("<%d>", kb_mode);
 
 	attrset(TAG_NORMAL);
 	addstr(layout->symbol);
@@ -586,7 +586,7 @@ focus(Client *c) {
 		    sel_x >= wax + waw) {
 			sel_x = wax + waw / 2;
 		}
-        
+
 		if (sel_y <  way ||
 		    sel_y >= way + wah) {
 			sel_y = way + wah / 2;
@@ -595,7 +595,7 @@ focus(Client *c) {
 		c = get_client_by_coord(sel_x, sel_y);
 		debug("client by (%d, %d) => %d\n", sel_x, sel_y, c ? c->order : -1);
 		// for (c = stack; c && !isvisible(c); c = c->snext);
-        } else {
+	} else {
 		if (sel_x <  c->x ||
 		    sel_x >= c->x + c->w)
 			sel_x = c->x + c->w / 2;
@@ -603,7 +603,7 @@ focus(Client *c) {
 		    sel_y >= c->y + c->h)
 			sel_y = c->y + c->h / 2;
 		debug("select %d (%d, %d)\n", c->order, sel_x, sel_y);
-        }
+	}
 
 	if (sel == c)
 		return;
@@ -858,28 +858,28 @@ view(const char *args[]) {
 
 static void
 viewsmallertag(const char *args[]) {
-    unsigned int newtagset = tagset[seltags];
-    int i;
-    for (i = LENGTH(tags) - 1; i > 1 && ((newtagset & (1 << i)) == 0); -- i) ;
-    newtagset = (1 << (i - 1)) & TAGMASK;
-    if (tagset[seltags] != newtagset && newtagset) {
-        seltags ^= 1; /* toggle sel tagset */
-        tagset[seltags] = newtagset;
-        tagschanged();
-    }    
+	unsigned int newtagset = tagset[seltags];
+	int i;
+	for (i = LENGTH(tags) - 1; i > 1 && ((newtagset & (1 << i)) == 0); -- i) ;
+	newtagset = (1 << (i - 1)) & TAGMASK;
+	if (tagset[seltags] != newtagset && newtagset) {
+		seltags ^= 1; /* toggle sel tagset */
+		tagset[seltags] = newtagset;
+		tagschanged();
+	}    
 }
 
 static void
 viewlargertag(const char *args[]) {
-    unsigned int newtagset = tagset[seltags];
-    int i;
-    for (i = 0; i < LENGTH(tags) - 2 && ((newtagset & (1 << i)) == 0); ++ i) ;
-    newtagset = (1 << (i + 1)) & TAGMASK;
-    if (tagset[seltags] != newtagset && newtagset) {
-        seltags ^= 1; /* toggle sel tagset */
-        tagset[seltags] = newtagset;
-        tagschanged();
-    }    
+	unsigned int newtagset = tagset[seltags];
+	int i;
+	for (i = 0; i < LENGTH(tags) - 2 && ((newtagset & (1 << i)) == 0); ++ i) ;
+	newtagset = (1 << (i + 1)) & TAGMASK;
+	if (tagset[seltags] != newtagset && newtagset) {
+		seltags ^= 1; /* toggle sel tagset */
+		tagset[seltags] = newtagset;
+		tagschanged();
+	}    
 }
 
 static void
@@ -890,29 +890,29 @@ viewprevtag(const char *args[]) {
 
 static void
 keypress(TermKeyKey *key) {
-    char  keyseq_buf[20];
-    int   len = termkey_ktos(tk, keyseq_buf, LENGTH(keyseq_buf), key);
-    
-    if (len <= 0 || len >= LENGTH(keyseq_buf)) return;
-        
-    for (Client *c = runinall ? nextvisible(clients) : sel; c; c = nextvisible(c->next)) {
-        if (is_content_visible(c)) {
-            c->urgent = false;
-            if (vt_is_curskeymode(c->term) &&
-                len == 3 &&
-                keyseq_buf[0] == '\e' &&
-                keyseq_buf[1] == '['  &&
-                keyseq_buf[2] >= 'A'  &&
-                keyseq_buf[2] <= 'Z') {
-                vt_write(c->term, "\eO", 2); /* replace \e[ to \eO */
-                vt_write(c->term, keyseq_buf + 2, len - 2);
-            } else {
-                vt_write(c->term, keyseq_buf, len);
-            }
-        }
-        if (!runinall)
-            break;
-    }
+	char  keyseq_buf[20];
+	int   len = termkey_ktos(tk, keyseq_buf, LENGTH(keyseq_buf), key);
+
+	if (len <= 0 || len >= LENGTH(keyseq_buf)) return;
+
+	for (Client *c = runinall ? nextvisible(clients) : sel; c; c = nextvisible(c->next)) {
+		if (is_content_visible(c)) {
+			c->urgent = false;
+			if (vt_is_curskeymode(c->term) &&
+			    len == 3 &&
+			    keyseq_buf[0] == '\e' &&
+			    keyseq_buf[1] == '['  &&
+			    keyseq_buf[2] >= 'A'  &&
+			    keyseq_buf[2] <= 'Z') {
+				vt_write(c->term, "\eO", 2); /* replace \e[ to \eO */
+				vt_write(c->term, keyseq_buf + 2, len - 2);
+			} else {
+				vt_write(c->term, keyseq_buf, len);
+			}
+		}
+		if (!runinall)
+			break;
+	}
 }
 
 static void
@@ -921,12 +921,12 @@ mouse_setup(void) {
 	mmask_t mask = 0;
 
 	if (mouse_events_enabled) {
-            debug("mouse enabled\n");
-            printf("\033[?1000h");
+		debug("mouse enabled\n");
+		printf("\033[?1000h");
 	} else {
-            debug("mouse disabled\n");
-            printf("\033[?1000l");
-        }
+		debug("mouse disabled\n");
+		printf("\033[?1000l");
+	}
 #endif /* CONFIG_MOUSE */
 }
 
@@ -954,22 +954,32 @@ getshell(void) {
 }
 
 static void
-setup(void) {
-	shell = getshell();
-	setlocale(LC_CTYPE, "");
+termkey_begin(void) {
 	tk = termkey_new(STDIN_FILENO, TERMKEY_FLAG_SPACESYMBOL | TERMKEY_FLAG_CTRLC);
 	if (!tk) {
 		fprintf(stderr, "Cannot initialize termkey, errno = %d\n", errno);
 		exit(-1);
 	}
 	printf("\e[?1000s\e[?1000h");
+}
+
+static void
+termkey_end(void) {
+	printf("\e[?1000l\e[?1000r");
+	termkey_destroy(tk);
+}
+
+static void
+setup(void) {
+	shell = getshell();
+	setlocale(LC_CTYPE, "");
+	termkey_begin();
 	initscr();
 	start_color();
 	noecho();
 	nonl();
 	keypad(stdscr, FALSE);
 	raw();
-        /* mouse_setup(); */
 	vt_init();
 	vt_keytable_set(keytable, LENGTH(keytable));
 	for (unsigned int i = 0; i < LENGTH(colors); i++) {
@@ -981,17 +991,17 @@ setup(void) {
 		}
 		colors[i].pair = vt_color_reserve(colors[i].fg, colors[i].bg);
 	}
-        for (unsigned mode = 0; mode < LENGTH(bindings); ++ mode) {
-            const char **reps = malloc(sizeof(const char *) * bindings[mode].count);
-            void **binding_mapping = malloc(sizeof(void *) * bindings[mode].count);
-            for (unsigned i = 0; i < bindings[mode].count; ++ i) {
-                reps[i] = bindings[mode].binding[i].keyseq_rep;
-                binding_mapping[i] = &bindings[mode].binding[i];
-            }
-            trie_create(&binding_tries[mode],
-                      reps, binding_mapping, bindings[mode].count);
-        }
-        cur_binding = &binding_tries[0];
+	for (unsigned mode = 0; mode < LENGTH(bindings); ++ mode) {
+		const char **reps = malloc(sizeof(const char *) * bindings[mode].count);
+		void **binding_mapping = malloc(sizeof(void *) * bindings[mode].count);
+		for (unsigned i = 0; i < bindings[mode].count; ++ i) {
+			reps[i] = bindings[mode].binding[i].keyseq_rep;
+			binding_mapping[i] = &bindings[mode].binding[i];
+		}
+		trie_create(&binding_tries[mode],
+			    reps, binding_mapping, bindings[mode].count);
+	}
+	cur_binding = &binding_tries[0];
 	resize_screen();
 	struct sigaction sa;
 	sa.sa_flags = 0;
@@ -1011,7 +1021,7 @@ destroy(Client *c) {
 	detach(c);
 	detachstack(c);
 	if (sel == c) {
-                sel = NULL;
+		sel = NULL;
 	}
 	if (lastsel == c)
 		lastsel = NULL;
@@ -1035,8 +1045,7 @@ cleanup(void) {
 		destroy(clients);
 	vt_shutdown();
 	endwin();
-        printf("\e[?1000l\e[?1000r");
-        termkey_destroy(tk);
+	termkey_end();
 	free(copyreg.data);
 	if (bar.fd > 0)
 		close(bar.fd);
@@ -1058,11 +1067,11 @@ static char *getcwd_by_pid(Client *c) {
 
 static void
 bindingmode(const char *args[]) {
-    if (!args[0]) return;
-    int mode = atoi(args[0]);
-    if (mode < 0 || mode >= LENGTH(bindings)) return;
-    cur_binding = &binding_tries[mode];
-    trie_traverse_init(cur_binding, &binding_cursor);
+	if (!args[0]) return;
+	int mode = atoi(args[0]);
+	if (mode < 0 || mode >= LENGTH(bindings)) return;
+	cur_binding = &binding_tries[mode];
+	trie_traverse_init(cur_binding, &binding_cursor);
 }
 
 static void
@@ -1186,43 +1195,43 @@ copymode(const char *args[]) {
 
 static void
 focusdir(const char* args[]) {
-    if (!args[0]) return;
-    
-    if (sel && isvisible(sel)) {
-        /* be careful to count the border width in */
-        switch (args[0][0]) {
-        case 'A':
-            /* up */
-            if (sel->y > way + 1)
-                sel_y = sel->y - 2;
-            else sel_y = way;
-            break;
-        case 'B':
-            /* down */
-            sel_y = sel->y + sel->h + 1;
-            if (sel_y >= way + wah)
-                sel_y = way + wah - 1;
-            break;
-        case 'D':
-            /* left */
-            if (sel->x > wax + 1)
-                sel_x = sel->x - 2;
-            else sel_x = wax;
-            break;
-        case 'C':
-            /* right */
-            sel_x = sel->x + sel->w + 1;
-            if (sel_x > wax + waw)
-                sel_x = wax + waw - 1;
-            break;
-        default:
-            break;
-        }
-        debug("new cond %c is (%d,%d) => %p\n",
-              args[0][0], sel_x, sel_y, get_client_by_coord(sel_x, sel_y));
-    }
+	if (!args[0]) return;
 
-    focus(get_client_by_coord(sel_x, sel_y));
+	if (sel && isvisible(sel)) {
+		/* be careful to count the border width in */
+		switch (args[0][0]) {
+		case 'A':
+			/* up */
+			if (sel->y > way + 1)
+				sel_y = sel->y - 2;
+			else sel_y = way;
+			break;
+		case 'B':
+			/* down */
+			sel_y = sel->y + sel->h + 1;
+			if (sel_y >= way + wah)
+				sel_y = way + wah - 1;
+			break;
+		case 'D':
+			/* left */
+			if (sel->x > wax + 1)
+				sel_x = sel->x - 2;
+			else sel_x = wax;
+			break;
+		case 'C':
+			/* right */
+			sel_x = sel->x + sel->w + 1;
+			if (sel_x > wax + waw)
+				sel_x = wax + waw - 1;
+			break;
+		default:
+			break;
+		}
+		debug("new cond %c is (%d,%d) => %p\n",
+		      args[0][0], sel_x, sel_y, get_client_by_coord(sel_x, sel_y));
+	}
+
+	focus(get_client_by_coord(sel_x, sel_y));
 }
 static void
 focusn(const char *args[]) {
@@ -1301,7 +1310,7 @@ killclient(const char *args[]) {
 	if (!sel)
 		return;
 	// debug("killing client with pid: %d\n", sel->pid);
-        debug("killing client %d with pid: %d\n", sel->order, sel->pid);
+	debug("killing client %d with pid: %d\n", sel->order, sel->pid);
 	kill(-sel->pid, SIGKILL);
 }
 
@@ -1647,96 +1656,96 @@ handle_cmdfifo(void) {
 static void
 handle_mouse(TermKeyKey *key) {
 #ifdef CONFIG_MOUSE
-        // MEVENT event;
-        TermKeyMouseEvent event;
-        TermKeyResult r;
-        int i, y, x, b = 0;
-        r = termkey_interpret_mouse(tk, key, &event, &b, &y, &x);
-        if (r != TERMKEY_RES_KEY) return;
-        switch (event) {
-        case TERMKEY_MOUSE_PRESS:
-            -- x; -- y;
-            msel = get_client_by_coord(x, y);
+	// MEVENT event;
+	TermKeyMouseEvent event;
+	TermKeyResult r;
+	int i, y, x, b = 0;
+	r = termkey_interpret_mouse(tk, key, &event, &b, &y, &x);
+	if (r != TERMKEY_RES_KEY) return;
+	switch (event) {
+	case TERMKEY_MOUSE_PRESS:
+		-- x; -- y;
+		msel = get_client_by_coord(x, y);
 
-            if (!msel)
-		return;
+		if (!msel)
+			return;
 
-            mmask_t mask = 0;
-            if (b == 1) mask = BUTTON1_CLICKED;
-            else if (b == 2) mask = BUTTON2_CLICKED;
-            else if (b == 3) mask = BUTTON3_CLICKED;
+		mmask_t mask = 0;
+		if (b == 1) mask = BUTTON1_CLICKED;
+		else if (b == 2) mask = BUTTON2_CLICKED;
+		else if (b == 3) mask = BUTTON3_CLICKED;
 
-            debug("mouse x:%d y:%d %d cx:%d cy:%d mask:%d\n", x, y, b, x - msel->x, y - msel->y, mask);
+		debug("mouse x:%d y:%d %d cx:%d cy:%d mask:%d\n", x, y, b, x - msel->x, y - msel->y, mask);
 
-            vt_mouse(msel->term, x - msel->x, y - msel->y, mask);
+		vt_mouse(msel->term, x - msel->x, y - msel->y, mask);
 
-            for (i = 0; i < LENGTH(buttons); i++) {
-		if (mask & buttons[i].mask) {
-                    buttons[i].action.cmd(buttons[i].action.args);
-                }
-            }
+		for (i = 0; i < LENGTH(buttons); i++) {
+			if (mask & buttons[i].mask) {
+				buttons[i].action.cmd(buttons[i].action.args);
+			}
+		}
 
-            msel = NULL;
-            break;
-        default:
-            break;
-        };
+		msel = NULL;
+		break;
+	default:
+		break;
+	};
 #endif /* CONFIG_MOUSE */
 }
 
 static void
 handle_keys(void) {
-    struct trie_cursor_s *cursor = &binding_cursor;
-    TermKeyKey key;
-    TermKeyResult tkr;
-    while (1) {
-        tkr = termkey_getkey(tk, &key);
-        if (tkr != TERMKEY_RES_KEY) break;
-                            
-        switch (key.type) {
-        case TERMKEY_TYPE_MOUSE:
-            handle_mouse(&key);
-            break;
-        case TERMKEY_TYPE_UNICODE:
-        case TERMKEY_TYPE_FUNCTION:
-        case TERMKEY_TYPE_KEYSYM:
-        {
-            char repbuf[16];
-            int len = termkey_strfkey(tk, repbuf, 16, &key, 0);
-            debug("KEY: %s %d\n", repbuf, len);
-            int matched = 0;
-            for (int i = 0; i < len; ++ i) {
-                int ret = trie_traverse(cur_binding, cursor, repbuf[i]);
-                debug("travese %d %c\n", ret, ret >= 0 ? ret : ' ');
-                if (ret < 0) {
-                    trie_traverse_init(cur_binding, cursor);
-                    matched = -1;
-                    break;
-                } else if (i == len - 1) {
-                    if (ret == 0) {
-                        KeyBinding *binding = trie_get_value(cur_binding, cursor);
-                        if (trie_traverse(cur_binding, cursor, ' ') < 0) {
-                            binding->action.cmd(binding->action.args);
-                            trie_traverse_init(cur_binding, cursor);
-                            matched = 1;
-                        }
-                    } else {
-                        matched = trie_traverse(cur_binding, cursor, ' ');
-                    }
-                }
-            }
+	struct trie_cursor_s *cursor = &binding_cursor;
+	TermKeyKey key;
+	TermKeyResult tkr;
+	while (1) {
+		tkr = termkey_getkey(tk, &key);
+		if (tkr != TERMKEY_RES_KEY) break;
 
-            if (matched < 0) {
-                debug("no match\n");
-                keypress(&key);
-            }
+		switch (key.type) {
+		case TERMKEY_TYPE_MOUSE:
+			handle_mouse(&key);
+			break;
+		case TERMKEY_TYPE_UNICODE:
+		case TERMKEY_TYPE_FUNCTION:
+		case TERMKEY_TYPE_KEYSYM:
+		{
+			char repbuf[16];
+			int len = termkey_strfkey(tk, repbuf, 16, &key, 0);
+			debug("KEY: %s %d\n", repbuf, len);
+			int matched = 0;
+			for (int i = 0; i < len; ++ i) {
+				int ret = trie_traverse(cur_binding, cursor, repbuf[i]);
+				debug("travese %d %c\n", ret, ret >= 0 ? ret : ' ');
+				if (ret < 0) {
+					trie_traverse_init(cur_binding, cursor);
+					matched = -1;
+					break;
+				} else if (i == len - 1) {
+					if (ret == 0) {
+						KeyBinding *binding = trie_get_value(cur_binding, cursor);
+						if (trie_traverse(cur_binding, cursor, ' ') < 0) {
+							binding->action.cmd(binding->action.args);
+							trie_traverse_init(cur_binding, cursor);
+							matched = 1;
+						}
+					} else {
+						matched = trie_traverse(cur_binding, cursor, ' ');
+					}
+				}
+			}
 
-            drawbar();
-        } break;
-        default:
-            break;
-        }
-    }
+			if (matched < 0) {
+				debug("no match\n");
+				keypress(&key);
+			}
+
+			drawbar();
+		} break;
+		default:
+			break;
+		}
+	}
 }
 
 static void
@@ -1901,7 +1910,7 @@ main(int argc, char *argv[]) {
 	sigaddset(&blockset, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &blockset, NULL);
 
-        trie_traverse_init(cur_binding, &binding_cursor);
+	trie_traverse_init(cur_binding, &binding_cursor);
 	while (running) {
 		int r, nfds = 0;
 		fd_set rd;
@@ -1956,8 +1965,8 @@ main(int argc, char *argv[]) {
 			-- r;
 		}
 
-                if (r == 0) goto redraw_focus;
-                    
+		if (r == 0) goto redraw_focus;
+
 		if (cmdfifo.fd != -1 && FD_ISSET(cmdfifo.fd, &rd))
 			handle_cmdfifo();
 
@@ -1981,7 +1990,7 @@ main(int argc, char *argv[]) {
 			}
 		}
 
-          redraw_focus:
+	redraw_focus:
 		if (is_content_visible(sel)) {
 			draw_content(sel);
 			curs_set(vt_cursor_visible(sel->term));
