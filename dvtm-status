@@ -1,16 +1,23 @@
 #!/bin/sh
 
-FIFO="/tmp/dvtm-status.$$"
+DVTM_PIPE_BASEDIR="/tmp/dvtm.$$"
+export DVTM_STATUS_FIFO="$DVTM_PIPE_BASEDIR/status"
+export DVTM_CMD_FIFO="$DVTM_PIPE_BASEDIR/cmd"
 
-[ -p "$FIFO" ] || mkfifo -m 600 "$FIFO" || exit 1
+mkdir -p "$DVTM_PIPE_BASEDIR"
+[ -p "$DVTM_STATUS_FIFO" ] || mkfifo -m 600 "$DVTM_STATUS_FIFO" || \
+    { echo "Cannot create status pipe"; exit 1; }
+[ -p "$DVTM_CMD_FIFO" ]    || mkfifo -m 600 "$DVTM_CMD_FIFO"    || \
+    { echo "Cannot create command pipe"; exit 1; }
 
 while true; do
 	date +%H:%M
 	sleep 60
-done > "$FIFO" &
+done > "$DVTM_STATUS_FIFO" &
 
 STATUS_PID=$!
-dvtm -s "$FIFO" "$@" 2> /dev/null
+dvtm -s "$DVTM_STATUS_FIFO" -c "$DVTM_CMD_FIFO" "$@" 2> /dev/null
 kill $STATUS_PID
 wait $STATUS_PID 2> /dev/null
-rm -f "$FIFO"
+rm -f "$DVTM_STATUS_FIFO" "$DVTM_CMD_FIFO"
+rmdir "$DVTM_PIPE_BASEDIR"

@@ -1718,7 +1718,6 @@ handle_keys(void) {
 				int ret = trie_traverse(cur_binding, cursor, repbuf[i]);
 				debug("travese %d %c\n", ret, ret >= 0 ? ret : ' ');
 				if (ret < 0) {
-					trie_traverse_init(cur_binding, cursor);
 					matched = -1;
 					break;
 				} else if (i == len - 1) {
@@ -1737,6 +1736,7 @@ handle_keys(void) {
 
 			if (matched < 0) {
 				debug("no match\n");
+				trie_traverse_init(cur_binding, cursor);
 				keypress(&key);
 			}
 
