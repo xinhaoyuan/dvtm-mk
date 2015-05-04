@@ -480,10 +480,19 @@ draw_all(void) {
 static void
 arrange(void) {
 	unsigned int m = 0, n = 0;
+	Client *f = (sel && isvisible(sel)) ? sel : NULL;
 	for (Client *c = nextvisible(clients); c; c = nextvisible(c->next)) {
+		if (!f) f = c;
 		c->order = ++n;
 		if (c->minimized)
 			m++;
+	}
+	if (m == n && f) {
+		/* all are minimized but some windows are visible --
+		 * show the selected or first one */
+		f->minimized = 0;
+		vt_dirty(f->term);
+		-- m;
 	}
 	erase();
 	attrset(NORMAL_ATTR);
