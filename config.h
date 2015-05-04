@@ -100,6 +100,7 @@ static KeyBinding binding_normal[] = {
 	{ MOD" p"       , { paste,          { NULL }                    } },
 	{ MOD" z"       , { zoom,           { NULL }                    } },
 	{ MOD" -"       , { toggleminimize, { NULL }                    } },
+	{ MOD" ="       , { toggleminimizeall, { NULL }                    } },
 	{ MOD" A-Left"  , { viewsmallertag, { NULL }                    } },
 	{ MOD" A-Right" , { viewlargertag,  { NULL }                    } },
 	{ MOD" A-1"     , { view,           { tags[0] }                 } },

@@ -196,6 +196,7 @@ static void tag(const char *args[]);
 static void togglebar(const char *args[]);
 static void togglebarpos(const char *args[]);
 static void toggleminimize(const char *args[]);
+static void toggleminimizeall(const char *args[]);
 static void togglemouse(const char *args[]);
 static void togglerunall(const char *args[]);
 static void toggletag(const char *args[]);
@@ -1488,6 +1489,42 @@ toggleminimize(const char *args[]) {
 	}
 	arrange();
 }
+
+static void
+toggleminimizeall(const char *args[]) {
+	Client *c, *m, *t;
+	unsigned int n;
+	if (!sel)
+		return;
+	/* the last window can't be minimized */
+	if (!sel->minimized) {
+		for (n = 0, c = nextvisible(clients); c; c = nextvisible(c->next))
+			if (!c->minimized)
+				n++;
+		if (n == 1) {
+			for (c = nextvisible(clients); c; c = nextvisible(c->next)) {
+				c->minimized = 0;
+				vt_dirty(c->term);
+			}
+		}
+		else {
+			m = sel;
+			detach(m);
+			attach(m);
+			focus(m);
+			for (c = nextvisible(clients); c; c = nextvisible(c->next))
+				c->minimized = (c != m);
+		}
+	}
+	else {
+		for (c = nextvisible(clients); c; c = nextvisible(c->next)) {
+			c->minimized = 0;
+			vt_dirty(c->term);
+		}
+	}
+	arrange();
+}
+
 
 static void
 togglemouse(const char *args[]) {
