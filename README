@@ -8,3 +8,13 @@ New features:
  - focus by direction (focusdir) command.
  
  - multi-mode key bindings.
+
+To compile the git version:
+
+# libtermkey
+git clone https://github.com/xinhaoyuan/libtermkey.git
+cd libtermkey; ./configure && make && sudo make instal
+l
+# dvtm
+git clone https://github.com/xinhaoyuan/dvtm-mk.git
+cd dvtm-mk; git submodule update --init; make && sudo make install
