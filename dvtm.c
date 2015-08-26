@@ -1858,6 +1858,7 @@ open_or_create_fifo(const char *name, const char **name_created) {
 
 	do {
 		if ((fd = open(name, O_RDWR|O_NONBLOCK)) == -1) {
+			fprintf(stderr, "Cannot open fifo, try to create it\n");
 			if (errno == ENOENT && !mkfifo(name, S_IRUSR|S_IWUSR)) {
 				*name_created = name;
 				continue;
