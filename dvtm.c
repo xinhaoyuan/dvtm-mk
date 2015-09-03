@@ -684,7 +684,10 @@ term_osc_handler(Vt *term, int cmd, const char *pt) {
 	{
 		if (c->cwd)
 			free(c->cwd);
-		c->cwd = strdup(pt);
+		if (!pt[0])
+			c->cwd = NULL;
+		else
+			c->cwd = strdup(pt);
 		// fprintf(stderr, "CWD changed to %s\n", pt);
 	}
 }
@@ -1105,17 +1108,23 @@ bindingmode(const char *args[]) {
 
 static void
 create(const char *args[]) {
-	const char *cmd = (args && args[0]) ? args[0] : shell;
-	const char *pargs[] = { "/bin/sh", "-c", cmd, NULL };
+	const char **pargs;	
 	char buf[8], *cwd = NULL;
 	const char *env[] = {
 		"DVTM_WINDOW_ID", buf,
 		NULL
 	};
-
 	Client *c = calloc(1, sizeof(Client));
 	if (!c)
 		return;
+	if (args && args[0]) {
+		c->cmd = args[0];
+		pargs = (const char *[]){ "/bin/sh", "-c", args[0], NULL };
+	}
+	else {
+		c->cmd = shell;
+		pargs = (const char *[]){ shell, NULL };
+	}
 	c->tags = tagset[seltags];
 	c->id = ++cmdfifo.id;
 	snprintf(buf, sizeof buf, "%d", c->id);
@@ -1132,15 +1141,16 @@ create(const char *args[]) {
 		return;
 	}
 
-	c->cmd = cmd;
 	if (args && args[1]) {
 		strncpy(c->title, args[1], sizeof(c->title) - 1);
 		c->title[sizeof(c->title) - 1] = '\0';
 	}
 	if (args && args[2])
 		cwd = !strcmp(args[2], "$CWD") ? getcwd_by_client(sel) : strdup(args[2]);
-	c->pid = vt_forkpty(c->term, "/bin/sh", pargs, cwd, env, NULL, NULL);
-	c->cwd = cwd;
+	c->pid = vt_forkpty(c->term, pargs[0], pargs, cwd, env, NULL, NULL);
+	c->cwd = NULL;
+	free(cwd);
+	// fprintf(stderr, "CMD = %s, CWD = %s, PID = %d\n", c->cmd, cwd, c->pid);
 	vt_data_set(c->term, c);
 	vt_title_handler_set(c->term, term_title_handler);
 	vt_urgent_handler_set(c->term, term_urgent_handler);
