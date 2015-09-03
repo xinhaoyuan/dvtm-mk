@@ -73,7 +73,7 @@ static Layout layouts[] = {
 
 /* you can at most specifiy MAX_ARGS (3) number of arguments */
 static KeyBinding binding_normal[] = {
-	{ MOD" c"       , { create,         { NULL }                    } },
+	{ MOD" c"       , { create,         { NULL, NULL, "$CWD" }                    } },
 	{ MOD" x"       , { killclient,     { NULL }                    } },
 	{ MOD" f"       , { setlayout,      { "[]=" }                   } },
 	{ MOD" g"       , { setlayout,      { "+++" }                   } },

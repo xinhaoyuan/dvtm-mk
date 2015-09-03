@@ -67,6 +67,7 @@ struct Client {
 	int editor_fds[2];
 	volatile sig_atomic_t editor_died;
 	const char *cmd;
+	char *cwd;
 	char title[255];
 	int order;
 	pid_t pid;
@@ -677,6 +678,18 @@ term_title_handler(Vt *term, const char *title) {
 }
 
 static void
+term_osc_handler(Vt *term, int cmd, const char *pt) {
+	Client *c = (Client *)vt_data_get(term);
+	if (cmd == 20)
+	{
+		if (c->cwd)
+			free(c->cwd);
+		c->cwd = strdup(pt);
+		// fprintf(stderr, "CWD changed to %s\n", pt);
+	}
+}
+
+static void
 term_urgent_handler(Vt *term) {
 	Client *c = (Client *)vt_data_get(term);
 	c->urgent = true;
@@ -1039,6 +1052,7 @@ destroy(Client *c) {
 	wnoutrefresh(c->window);
 	vt_destroy(c->term);
 	delwin(c->window);
+	if (c->cwd) free(c->cwd);
 	if (!clients && LENGTH(actions)) {
 		if (!strcmp(c->cmd, shell))
 			quit(NULL);
@@ -1067,12 +1081,17 @@ cleanup(void) {
 		unlink(cmdfifo.file);
 }
 
-static char *getcwd_by_pid(Client *c) {
+static char *getcwd_by_client(Client *c) {
 	if (!c)
 		return NULL;
-	char buf[32];
-	snprintf(buf, sizeof buf, "/proc/%d/cwd", c->pid);
-	return realpath(buf, NULL);
+	if (c->cwd) {
+		return strdup(c->cwd);
+	}
+	else {
+		char buf[32];
+		snprintf(buf, sizeof buf, "/proc/%d/cwd", c->pid);
+		return realpath(buf, NULL);
+	}
 }
 
 static void
@@ -1119,13 +1138,13 @@ create(const char *args[]) {
 		c->title[sizeof(c->title) - 1] = '\0';
 	}
 	if (args && args[2])
-		cwd = !strcmp(args[2], "$CWD") ? getcwd_by_pid(sel) : (char*)args[2];
+		cwd = !strcmp(args[2], "$CWD") ? getcwd_by_client(sel) : strdup(args[2]);
 	c->pid = vt_forkpty(c->term, "/bin/sh", pargs, cwd, env, NULL, NULL);
-	if (args && args[2] && !strcmp(args[2], "$CWD"))
-		free(cwd);
+	c->cwd = cwd;
 	vt_data_set(c->term, c);
 	vt_title_handler_set(c->term, term_title_handler);
 	vt_urgent_handler_set(c->term, term_urgent_handler);
+	vt_osc_handler_set(c->term, term_osc_handler);
 	c->x = wax;
 	c->y = way;
 	debug("client with pid %d forked\n", c->pid);

@@ -29,7 +29,7 @@
 typedef struct Vt Vt;
 typedef void (*vt_title_handler_t)(Vt*, const char *title);
 typedef void (*vt_urgent_handler_t)(Vt*);
-
+typedef void (*vt_osc_handler_t)(Vt*, int cmd, const char *pt);
 void vt_init(void);
 void vt_shutdown(void);
 
@@ -37,6 +37,7 @@ void vt_keytable_set(char const * const keytable_overlay[], int count);
 void vt_default_colors_set(Vt*, attr_t attrs, short fg, short bg);
 void vt_title_handler_set(Vt*, vt_title_handler_t);
 void vt_urgent_handler_set(Vt*, vt_urgent_handler_t);
+void vt_osc_handler_set(Vt*, vt_osc_handler_t);
 void vt_data_set(Vt*, void *);
 void *vt_data_get(Vt*);
 

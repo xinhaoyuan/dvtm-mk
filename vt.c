@@ -193,6 +193,7 @@ struct Vt {
 	char title[256];         /* xterm style window title */
 	vt_title_handler_t title_handler; /* hook which is called when title changes */
 	vt_urgent_handler_t urgent_handler; /* hook which is called upon bell */
+	vt_osc_handler_t osc_handler;
 	void *data;              /* user supplied data */
 };
 
@@ -1141,9 +1142,8 @@ static void interpret_osc(Vt *t)
 		case 1: /* icon name */
 			break;
 		default:
-#ifndef NDEBUG
-			fprintf(stderr, "unknown OSC command: %d\n", command);
-#endif
+			if (t->osc_handler)
+				t->osc_handler(t, command, data+1);
 			break;
 		}
 	}
@@ -1842,6 +1842,11 @@ void vt_title_handler_set(Vt *t, vt_title_handler_t handler)
 void vt_urgent_handler_set(Vt *t, vt_urgent_handler_t handler)
 {
 	t->urgent_handler = handler;
+}
+
+void vt_osc_handler_set(Vt *t, vt_osc_handler_t handler)
+{
+	t->osc_handler = handler;
 }
 
 void vt_data_set(Vt *t, void *data)
