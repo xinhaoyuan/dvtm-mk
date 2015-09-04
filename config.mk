@@ -14,10 +14,10 @@ NCURSES_NAME    := ncurses
 else
 NCURSES_NAME    := ncursesw
 endif
-NCURSES_LDFLAGS := $(shell if command -v pkg-config 1>/dev/null 2>&1; then pkg-config --libs ${NCURSES_NAME}; else echo -l${NCURSES_NAME}; fi)
-NCURSES_CFLAGS  := $(shell if command -v pkg-config 1>/dev/null 2>&1; then pkg-config --cflags ${NCURSES_NAME}; else echo; fi)
+NCURSES_LDFLAGS := $(shell if command -v pkg-config 1>/dev/null 2>&1 && pkg-config ${NCURSES_NAME}; then pkg-config --libs ${NCURSES_NAME}; else echo -l${NCURSES_NAME}; fi)
+NCURSES_CFLAGS  := $(shell if command -v pkg-config 1>/dev/null 2>&1 && pkg-config ${NCURSES_NAME}; then pkg-config --cflags ${NCURSES_NAME}; else echo; fi)
 
-TERMKEY_LDFLAGS := $(shell if command -v pkg-config 1>/dev/null 2>&1; then pkg-config --libs termkey; else echo -ltermkey; fi)
+TERMKEY_LDFLAGS := $(shell if command -v pkg-config 1>/dev/null 2>&1 && pkg-config termkey; then pkg-config --libs termkey; else echo -ltermkey; fi)
 
 INCS = -I.
 LIBS = -lc -lutil ${TERMKEY_LDFLAGS} ${NCURSES_LDFLAGS} 
