@@ -19,10 +19,17 @@ NCURSES_CFLAGS  := $(shell if command -v pkg-config 1>/dev/null 2>&1 && pkg-conf
 
 TERMKEY_LDFLAGS := $(shell if command -v pkg-config 1>/dev/null 2>&1 && pkg-config termkey; then pkg-config --libs termkey; else echo -ltermkey; fi)
 
+# some definitions are missing in c99 under cygwin
+ifeq ($(shell uname -o),Cygwin)
+CSTD := gnu99
+else
+CSTD := c99
+endif
+
 INCS = -I.
 LIBS = -lc -lutil ${TERMKEY_LDFLAGS} ${NCURSES_LDFLAGS} 
 CPPFLAGS = -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED
-CFLAGS += -std=c99 ${INCS} -DVERSION=\"${VERSION}\" -DNDEBUG ${CPPFLAGS} ${NCURSES_CFLAGS}
+CFLAGS += -std=${CSTD} ${INCS} -DVERSION=\"${VERSION}\" -DNDEBUG ${CPPFLAGS} ${NCURSES_CFLAGS}
 LDFLAGS += ${LIBS}
 
 ifeq ($(shell uname),Darwin)
