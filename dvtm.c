@@ -680,6 +680,7 @@ term_title_handler(Vt *term, const char *title) {
 static void
 term_osc_handler(Vt *term, int cmd, const char *pt) {
 	Client *c = (Client *)vt_data_get(term);
+	debug("OSC %d,%s\n", cmd, pt);
 	if (cmd == 20)
 	{
 		if (c->cwd)
@@ -688,7 +689,6 @@ term_osc_handler(Vt *term, int cmd, const char *pt) {
 			c->cwd = NULL;
 		else
 			c->cwd = strdup(pt);
-		// fprintf(stderr, "CWD changed to %s\n", pt);
 	}
 }
 
